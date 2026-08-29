@@ -1,5 +1,6 @@
 { config, pkgs, ... }:
 {
+  networking.hostName = "creation-station";
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -8,7 +9,7 @@
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     initialPassword = "test";
   };
-
+  nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
@@ -22,5 +23,5 @@
   environment.variables.EDITOR = "nvim";
   environment.variables.SUDO_EDITOR = "nvim";
 
-  system.stateVersion = "26.05";
+  system.stateVersion = "26.11";
 }
