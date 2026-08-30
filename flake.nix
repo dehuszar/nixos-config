@@ -1,14 +1,27 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     home-manager.url = "github:nix-community/home-manager";
+    mangowm = {
+      url = "github:mangowm/mango";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    inputs@{ nixpkgs, home-manager, ... }:
+    inputs@{
+      nixpkgs,
+      home-manager,
+      mangowm,
+      ...
+    }:
+    let
+      inherit (nixpkgs) lib;
+    in
     {
       nixosConfigurations = {
-        hostname = nixpkgs.lib.nixosSystem {
+        hostname = lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
             ./configuration.nix
@@ -19,6 +32,7 @@
               home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.sam = ./home.nix;
             }
+            mangowm.nixosModules.mango
           ];
         };
       };

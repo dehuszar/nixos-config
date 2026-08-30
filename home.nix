@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -9,7 +10,55 @@
 {
   imports = [
     ./bitwig.nix
+    inputs.mangowm.hmModules.mango
   ];
+
+  # mangowm config. This Home Manager module is what writes
+  # ~/.config/mango/config.conf (it only writes the file when the
+  # config is non-empty). Nested attrs flatten to underscores, and
+  # repeatable keys (like `bind`) are written as lists.
+  wayland.windowManager.mango = {
+    enable = true;
+    settings = {
+      # VM-only: the emulated GPU has no accelerated GL, so allow software EGL.
+      # WLR_DRM_NO_ATOMIC forces legacy KMS modesetting, which the emulated
+      # bochs/virtio display handles more reliably than atomic flips.
+      # Remove these on real hardware. env= is set before renderer init.
+      env = [
+        "WLR_RENDERER_ALLOW_SOFTWARE,1"
+        "LIBGL_ALWAYS_SOFTWARE,1"
+        "WLR_DRM_NO_ATOMIC,1"
+      ];
+
+      # Window effects
+      border_radius = 6;
+      focused_opacity = 1.0;
+      unfocused_opacity = 1.0;
+
+      # Disabled for the GPU-less VM: fx post-processing (animations) can
+      # break client-buffer blits under llvmpipe. Re-enable on real hardware.
+      animations = 0;
+
+      # Repeatable key -> list of comma-separated bindings.
+      # Action names mirror mango's bundled default config.
+      bind = [
+        "Super,r,reload_config"
+        "Super,m,quit"
+        "Alt,q,killclient,"
+        "Alt,f,togglefullscreen,"
+        "Alt,Left,focusdir,left"
+        "Alt,Right,focusdir,right"
+        "Alt,Up,focusdir,up"
+        "Alt,Down,focusdir,down"
+        # Launch a terminal (ghostty) — press Super+Return to test mango interactively.
+        "Super,Return,spawn,ghostty"
+        # Require the app installed; uncomment if you have them:
+        # "Alt,space,spawn,rofi -show drun"
+      ];
+    };
+    # Raw config lines appended verbatim (unsupported/advanced opts)
+    extraConfig = "";
+  };
 
   # Home Manager needs a bit of information about you and the paths it should
   # manage.
@@ -34,6 +83,7 @@
     dbeaver-bin
     docker-sbx
     firefox
+    ghostty
     freecad
     gimp
     inkscape
