@@ -9,18 +9,44 @@ modules, selected by an `isVM` flag threaded through `flake.nix`'s
 | Configuration | `isVM` | Purpose |
 |---|---|---|
 | `nixosConfigurations.hostname` | `false` | The real hardware target. Uses the GPU, no VM workarounds. |
-| `nixosConfigurations.vm` | `true` | A QEMU test VM. Injects software-rendering env so mangowm runs under QEMU's GPU-less display. |
+| `nixosConfigurations.vm` | `true` | A QEMU test VM. Renders through virgl (host-side accelerated GL) via the VM-only qemu module. |
 
 The only config difference between the two is the mangowm `env` block in
-`home.nix`:
+`home.nix` and, for the VM, the QEMU display adapter set in a **VM-only module**
+in `flake.nix` (it deliberately lives there, not in shared `configuration.nix`,
+so it can't break the real-hardware build):
 
 ```nix
-env = if isVM then [
-  "WLR_RENDERER_ALLOW_SOFTWARE,1"
-  "LIBGL_ALWAYS_SOFTWARE,1"
-  "WLR_DRM_NO_ATOMIC,1"
-] else [];   # real hardware -> empty -> GPU rendering
+# flake.nix -> nixosConfigurations.vm extraModules (VM-only):
+# single virtio-gpu with virgl (host 3D) accel. `-vga none` drops the default
+# bochs std VGA so there's exactly one output.
+{
+  virtualisation.graphics = true;
+  virtualisation.qemu.options = [
+    "-vga" "none"
+    "-display" "gtk,gl=on"
+    "-device" "virtio-vga-gl"
+  ];
+}
 ```
+
+> Use the dedicated GL device `virtio-vga-gl` (NOT `virtio-gpu-pci,gl=on`,
+> which has no `gl` property on QEMU 11.1 and fails with `Property
+> 'virtio-gpu-pci.gl' not found`).
+
+Both configs now render mangowm with real accelerated GL (virgl in the VM,
+GPU on real hardware), so `env` is `[]` in both.
+
+> **Display-accel note:** the VM's default adapter is bochs std VGA
+> (unaccelerated), which left wlroots on llvmpipe where dma-buf/GL texture
+> import fails and the desktop stays black. Replacing it with virtio-gpu+virgl
+> gives the guest a real GL context so the full desktop (bar + windows + client
+> content) draws in the QEMU window. Do **not** layer a second display device on
+> top of bochs — two outputs renders to the one the window isn't showing. The
+> VM also imports `qemu-vm.nix` explicitly (it's no longer in the default
+> module list on 26.11). `make run` requires a freshly built `make build-vm`
+> result — an old `./result` uses a QEMU without virgl and fails with
+> `Property 'virtio-gpu-pci.gl' not found`.
 
 ---
 
@@ -39,9 +65,13 @@ The VM lets you verify mangowm boots and runs before touching real hardware.
 ### Build the VM
 
 ```bash
-make build
+make build-vm
 # equivalent:
 # nix build .#nixosConfigurations.vm.config.system.build.vm
+#
+# and the source config (real hardware) with:
+# make build
+# nix build .#nixosConfigurations.hostname.config.system.build.toplevel
 ```
 
 The result is symlinked to `./result`.
@@ -63,19 +93,17 @@ make run-vm-cli
 ### In the VM
 
 - greetd **auto-logs-in** to `sam` and launches mangowm automatically.
-- **Launch ghostty** (your terminal):
+- Launch ghostty (your terminal):
   - in the QEMU window, click inside, then press `Super+Return`, **or**
   - if the host steals the key, enable QEMU input grab (`Ctrl+Alt+G`), then
     press `Super+Return`, **or**
   - via the QEMU monitor: press `Ctrl+Alt+2`, type `sendkey meta_l-ret`, Enter,
     then `Ctrl+Alt+1` to return to the display.
 
-> **Note:** the VM has no GPU, so everything renders in software (llvmpipe).
-> Mangowm starts and accepts clients, but **client window content will appear
-> black** (the compositor cannot import dma-buf/GL textures under software
-> rendering). This is a known VM limitation and does **not** reproduce on real
-> hardware. Use the VM to prove the config *boots and runs*, not to view a
-> desktop.
+> The VM renders the desktop through virtio-gpu/virgl (host-side 3D), so it
+> should look like a real desktop. If you ever see the old black screen with
+> only faint bars, the guest has fallen back to llvmpipe — re-check the QEMU
+> `gl=on` flags and that the host QEMU window has a GL context.
 
 ### Useful mangowm keys (from `home.nix`)
 
@@ -144,19 +172,20 @@ make run-vm-cli
 nix flake check
 
 # VM build
-make
+make build-vm
 # or
 nix build .#nixosConfigurations.vm.config.system.build.vm
 
 # real hardware build
-nix build .#nixosConfigurations.hostname.config.system.build.toplevel
+make build
 
-# confirm the VM/realtime env split behaves as intended:
-nix eval .#nixosConfigurations.hostname.config.home-manager.users.sam.wayland.windowManager.mango.settings.env
-# -> should be [ ]  (GPU)
-
+# confirm the VM uses accelerated GL (no llvmpipe env forcing) and a single
+# virtio display:
 nix eval .#nixosConfigurations.vm.config.home-manager.users.sam.wayland.windowManager.mango.settings.env
-# -> should list the three WLR_/LIBGL_ software-rendering vars
+# -> should be [ ]
+
+nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
+# -> [ "-vga" "none" "-device" "virtio-gpu-pci,gl=on" "-display" "gtk,gl=on" ]
 ```
 
 ---

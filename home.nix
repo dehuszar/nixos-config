@@ -6,8 +6,6 @@
   ...
 }:
 
-# This is a temporary definition.  Will eventually be replaced with a remote
-# reference to my github-managed home-manager repo
 {
   imports = [
     ./bitwig.nix
@@ -21,24 +19,22 @@
   wayland.windowManager.mango = {
     enable = true;
     settings = {
-      # VM-only renderer workarounds (QEMU has no accelerated GPU):
-      #  - WLR_RENDERER_ALLOW_SOFTWARE: allow CPU (llvmpipe) EGL
-      #  - LIBGL_ALWAYS_SOFTWARE: force software GL everywhere
-      #  - WLR_DRM_NO_ATOMIC: use legacy KMS, not atomic flips
-      # On real hardware (isVM = false) this list is empty and mango uses the GPU.
-      env = if isVM then [
-        "WLR_RENDERER_ALLOW_SOFTWARE,1"
-        "LIBGL_ALWAYS_SOFTWARE,1"
-        "WLR_DRM_NO_ATOMIC,1"
-      ] else [];
+      # Renderer env. With the VM now exposing a real accelerated GPU via
+      # virtio-gpu/virgl (see the VM-only qemu display module in flake.nix),
+      # mangowm should use hardware GL just like on the real machine. The old
+      # VM workaround (WLR_RENDERER_ALLOW_SOFTWARE / LIBGL_ALWAYS_SOFTWARE /
+      # WLR_DRM_NO_ATOMIC) is no longer set because LIBGL_ALWAYS_SOFTWARE would
+      # force llvmpipe even when virgl is available, turning the screen black
+      # again. If virgl is ever unavailable, temporarily re-add those vars.
+      env = [ ];
 
       # Window effects
       border_radius = 6;
       focused_opacity = 1.0;
       unfocused_opacity = 1.0;
 
-      # Disabled for the GPU-less VM: fx post-processing (animations) can
-      # break client-buffer blits under llvmpipe. Re-enable on real hardware.
+      # fx post-processing (animations) is left off to keep the VM's
+      # render/blit path simple (works under virgl and llvmpipe alike).
       animations = 0;
 
       # Repeatable key -> list of comma-separated bindings.
@@ -103,10 +99,6 @@
     thorium-reader
     yazi
 
-    # # Adds the 'hello' command to your environment. It prints a friendly
-    # # "Hello, world!" when run.
-    # pkgs.hello
-
     # # It is sometimes useful to fine-tune packages, for example, by applying
     # # overrides. You can do that directly here, just don't forget the
     # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
@@ -159,13 +151,10 @@
     SUDO_EDITOR = "nvim";
   };
 
-  # nixpkgs.config.allowUnfree = true;
-
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
-
   # pi-coding-agent appears to be on the unstable branch, not the current 26.05
-  # programs.pi-coding-agent.enable = true;
+  programs.pi-coding-agent.enable = true;
 
   targets.genericLinux.enable = true;
   targets.genericLinux.gpu.enable = true;
