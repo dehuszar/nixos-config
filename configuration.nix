@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, isVM ? false, ... }:
 {
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -32,10 +32,7 @@
     enable = true;
     settings = {
       initial_session = {
-        # TEMP diagnostic: tee mangowm's stderr/stdout to a file so we can
-        # read it over the serial console (greetd sessions don't journal).
-        # Remove the pipe once debugging is done.
-        command = "mango 2>&1 | tee /home/sam/mango.log";
+        command = "mango";
         user = "sam"; # auto-login on first start, no password required
       };
       default_session = {

@@ -2,6 +2,7 @@
   config,
   pkgs,
   inputs,
+  isVM ? false,
   ...
 }:
 
@@ -20,15 +21,16 @@
   wayland.windowManager.mango = {
     enable = true;
     settings = {
-      # VM-only: the emulated GPU has no accelerated GL, so allow software EGL.
-      # WLR_DRM_NO_ATOMIC forces legacy KMS modesetting, which the emulated
-      # bochs/virtio display handles more reliably than atomic flips.
-      # Remove these on real hardware. env= is set before renderer init.
-      env = [
+      # VM-only renderer workarounds (QEMU has no accelerated GPU):
+      #  - WLR_RENDERER_ALLOW_SOFTWARE: allow CPU (llvmpipe) EGL
+      #  - LIBGL_ALWAYS_SOFTWARE: force software GL everywhere
+      #  - WLR_DRM_NO_ATOMIC: use legacy KMS, not atomic flips
+      # On real hardware (isVM = false) this list is empty and mango uses the GPU.
+      env = if isVM then [
         "WLR_RENDERER_ALLOW_SOFTWARE,1"
         "LIBGL_ALWAYS_SOFTWARE,1"
         "WLR_DRM_NO_ATOMIC,1"
-      ];
+      ] else [];
 
       # Window effects
       border_radius = 6;
