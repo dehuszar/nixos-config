@@ -6,6 +6,8 @@ This folder is managed by git, so you may edit any files inside this folder whic
 
 When troubleshooting or diagnosing, do not output multiple steps at once. Only offer one step at a time, teeing up the next step based on the answer to the previous.
 
+Use context7 for all code samples or suggestions which might benefit from the latest documentation for a given tool.
+
 ## Environment
 
 Nix version: `nix (Nix) 2.35.1`
