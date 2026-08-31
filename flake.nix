@@ -7,6 +7,10 @@
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    quickshell = {
+      url = "github:quickshell-mirror/quickshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -22,6 +26,7 @@
       nixpkgs,
       home-manager,
       mangowm,
+      quickshell,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -31,7 +36,11 @@
       # Shared module list for every machine. `isVM` is injected via
       # specialArgs so each config can flip VM-only workarounds.
       mkNixos =
-        { system ? "x86_64-linux", isVM ? false, extraModules ? [ ] }:
+        {
+          system ? "x86_64-linux",
+          isVM ? false,
+          extraModules ? [ ],
+        }:
         lib.nixosSystem {
           inherit system;
           specialArgs = { inherit isVM; };
@@ -48,7 +57,8 @@
             }
             mangowm.nixosModules.mango
             # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
-          ] ++ extraModules;
+          ]
+          ++ extraModules;
         };
     in
     {
@@ -71,3 +81,4 @@
       };
     };
 }
+

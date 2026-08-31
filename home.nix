@@ -59,6 +59,7 @@ in
   imports = [
     ./bitwig.nix
     ./modules/home/mango.nix
+    ./modules/home/quickshell.nix
     ./modules/home/vm-resize.nix
   ];
 
@@ -113,7 +114,8 @@ in
       "ignoredups"
       "ignorespace"
     ];
-    initExtra = builtins.readFile ./bashrc;
+    #  FIXME :: need to create a bashrc template and populate it.
+    # initExtra = builtins.readFile ./bashrc;
     shellAliases = shellAliases;
   };
   programs.pi-coding-agent.enable = true;
