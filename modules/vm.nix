@@ -15,21 +15,23 @@
     "${modulesPath}/virtualisation/qemu-vm.nix"
   ];
 
-  # Open a GTK window (no -nographic).
-  virtualisation.graphics = true;
-
-  # Make mangowm actually visible in QEMU: replace the default bochs std VGA
-  # with a single virtio-gpu that has virgl (host 3D) accel. `-vga none` drops
-  # bochs so there's exactly one output (a second device on top is what broke
-  # an earlier attempt). Use the dedicated `virtio-vga-gl` device - NOT
-  # `virtio-gpu-pci,gl=on`, which has no `gl` property on QEMU 11.1 and fails
-  # with "Property 'virtio-gpu-pci.gl' not found". Keep `-display gtk,gl=on`
-  # before the device so a GL-capable display is active.
+  # Use GTK display without GL acceleration to avoid cursor rendering bugs.
+  # This provides a stable local window with good performance for most tasks.
+  # If you need remote access or better graphics, consider Spice (commented below).
   virtualisation.qemu.options = [
     "-vga" "none"
-    "-display" "gtk,gl=on"
-    "-device" "virtio-vga-gl"
+    "-display" "gtk"
+    "-device" "virtio-vga"
+    "-device" "usb-tablet"  # Better mouse handling
   ];
+
+  # Alternative: Spice for remote desktop access (uncomment to use):
+  # virtualisation.qemu.options = [
+  #   "-vga" "none"
+  #   "-device" "virtio-vga"
+  #   "-spice" "port=5900,disable-ticketing=on"
+  #   "-device" "usb-tablet"
+  # ];
 
   # Placeholder root filesystem (tmpfs) so `nix flake check` can evaluate
   # `system.build.toplevel` for this config without a real disk layout.
