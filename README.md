@@ -12,12 +12,12 @@ modules, selected by an `isVM` flag threaded through `flake.nix`'s
 | `nixosConfigurations.vm` | `true` | A QEMU test VM. Renders through virgl (host-side accelerated GL) via the VM-only qemu module. |
 
 The only config difference between the two is the mangowm `env` block in
-`home.nix` and, for the VM, the QEMU display adapter set in a **VM-only module**
-in `flake.nix` (it deliberately lives there, not in shared `configuration.nix`,
-so it can't break the real-hardware build):
+`modules/home/mango.nix` and, for the VM, the QEMU display adapter set in the
+**VM-only module** `modules/vm.nix` (it deliberately is not in shared
+`configuration.nix`, so it can't break the real-hardware build):
 
 ```nix
-# flake.nix -> nixosConfigurations.vm extraModules (VM-only):
+# modules/vm.nix (imported only by nixosConfigurations.vm):
 # single virtio-gpu with virgl (host 3D) accel. `-vga none` drops the default
 # bochs std VGA so there's exactly one output.
 {
@@ -43,8 +43,8 @@ GPU on real hardware), so `env` is `[]` in both.
 > gives the guest a real GL context so the full desktop (bar + windows + client
 > content) draws in the QEMU window. Do **not** layer a second display device on
 > top of bochs — two outputs renders to the one the window isn't showing. The
-> VM also imports `qemu-vm.nix` explicitly (it's no longer in the default
-> module list on 26.11). `make run` requires a freshly built `make build-vm`
+> VM also imports `qemu-vm.nix` explicitly in `modules/vm.nix` (it's no longer
+> in the default module list on 26.11). `make run` requires a freshly built `make build-vm`
 > result — an old `./result` uses a QEMU without virgl and fails with
 > `Property 'virtio-gpu-pci.gl' not found`.
 
@@ -93,7 +93,7 @@ make run-cli
 ### In the VM
 
 > **VM login password:** the VM gives `sam` the password `test` (`hashedPassword`,
-> set **VM-only** via `lib.mkIf isVM` in `configuration.nix`). The graphical
+> set in the VM-only `modules/vm.nix`). The graphical
 > desktop auto-logs in via greetd (no password), but the **serial/CLI login
 > (`make run-cli`) and any SSH into the VM need it**. The real-hardware config
 > ships no password — set yours with `passwd` after install.
@@ -111,7 +111,7 @@ make run-cli
 > only faint bars, the guest has fallen back to llvmpipe — re-check the QEMU
 > `gl=on` flags and that the host QEMU window has a GL context.
 
-### Useful mangowm keys (from `home.nix`)
+### Useful mangowm keys (from `modules/home/mango.nix`)
 
 | Keys | Action |
 |---|---|
@@ -337,9 +337,12 @@ nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
 | File | Role |
 |---|---|
 | `flake.nix` | Flake: inputs, `mkNixos` builder, `hostname` + `vm` configs |
-| `configuration.nix` | Shared NixOS config (boot, greetd+seatd, users, mango NixOS module) |
-| `home.nix` | Shared home-manager config (packages, mangowm settings + bindings) |
+| `configuration.nix` | Shared NixOS core (boot, hardware, locale, networking, users) |
+| `home.nix` | Home Manager entry point (identity, shared packages, programs) |
+| `modules/desktop.nix` | Desktop stack: mangowm (NixOS side), seatd, greetd |
+| `modules/vm.nix` | VM-only: qemu-vm import, virtio-gpu display, tmpfs root, VM password |
+| `modules/home/mango.nix` | Home Manager mangowm config (settings + bindings) |
+| `modules/home/vm-resize.nix` | VM-only auto-resize watcher (event-driven) |
 | `hardware-configuration.nix` | **Placeholder** real-hardware FS — replace on install |
-| `vm-root.nix` | Low-precedence tmpfs root so `vm` passes `nix flake check` |
 | `bitwig.nix` | Imported home-manager module (packages) |
 | `Makefile` | `build`, `build-vm`, `check`, `run`, `run-cli`, `generate-hardware`, `restore-placeholder` |

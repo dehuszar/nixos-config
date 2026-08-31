@@ -34,7 +34,7 @@ restore-placeholder:
 	git checkout -- hardware-configuration.nix
 	@echo "Restored committed placeholder hardware-configuration.nix."
 # Display adapter for mangowm visibility in the VM is configured declaratively
-# in flake.nix's VM-only module (`virtualisation.qemu.options`: use the dedicated
+# in modules/vm.nix (`virtualisation.qemu.options`: use the dedicated
 # `virtio-vga-gl` device, NOT `virtio-gpu-pci,gl=on` which has no `gl` property
 # on QEMU 11.1; `-vga none` drops the default bochs adapter). Don't add a
 # second display device here - two outputs is what broke the earlier attempt.
