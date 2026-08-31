@@ -87,10 +87,16 @@ make run
 Serial/CLI only (for capturing logs, no window):
 
 ```bash
-make run-vm-cli
+make run-cli
 ```
 
 ### In the VM
+
+> **VM login password:** the VM gives `sam` the password `test` (`hashedPassword`,
+> set **VM-only** via `lib.mkIf isVM` in `configuration.nix`). The graphical
+> desktop auto-logs in via greetd (no password), but the **serial/CLI login
+> (`make run-cli`) and any SSH into the VM need it**. The real-hardware config
+> ships no password — set yours with `passwd` after install.
 
 - greetd **auto-logs-in** to `sam` and launches mangowm automatically.
 - Launch ghostty (your terminal):
@@ -120,48 +126,184 @@ make run-vm-cli
 
 ## Workflow 2 — Bootstrap the real installation
 
-1. **Get the repo onto the target machine** (or generate the config on the
-   target after a base install).
+This repo stays portable: the committed `hardware-configuration.nix` is a
+**placeholder** (tmpfs root, only so the flake evaluates anywhere), and the
+real per-machine config is generated on the target and kept **out of git**, so
+no disk layouts / UUIDs are published.
 
-2. **Generate the real hardware config** on the target. From a live NixOS
-   installer with your root mounted (e.g. at `/mnt`):
+> **Where you run these steps:** everything in Workflow 2 runs from the
+> **live/minimal installer** — the text-based NixOS ISO's shell — *not* from
+> an already-installed system. Don't install a stock NixOS first and then
+> bootstrap from it; this flow writes the final system directly via
+> `nixos-install`. Once it finishes you `reboot` into the installed OS and
+> follow the "Post-install & pre-bootstrap checklist" on that running system.
 
-   ```bash
-   nixos-generate-config --root /mnt
-   ```
-
-   This writes real `fileSystems` (device/UUID), swap, firmware, GPU, and
-   network options.
-
-3. **Replace the placeholder** in this repo with the generated one:
-
-   ```bash
-   cp /mnt/etc/nixos/hardware-configuration.nix ./hardware-configuration.nix
-   ```
-
-   > The placeholder in this repo is a tmpfs root created only so
-   > `nix flake check` passes before real hardware exists. Do **not** install
-   > with it. Always replace it with the generated file.
-
-4. **Build the real machine**:
+1. **Get the repo onto the target** (boot the NixOS installer/live medium;
+   git, Nix + flakes are available there):
 
    ```bash
-   nix build .#nixosConfigurations.hostname.config.system.build.toplevel
+   git clone <repo-url>
+   cd nixos-config
    ```
 
-5. **Install** it (from the installer/live environment):
+2. **Partition, format, and mount the target disks** so `/mnt` is the mounted
+   root. BOTH `make generate-hardware` and `nixos-install` run against `/mnt`,
+   so it must already point at your real disks. EFI example (adapt devices!):
+
+   ```bash
+   lsblk                        # find your disk, e.g. /dev/nvme0n1
+   # create two partitions: 1) EFI system partition (512M, type ef00)
+   #                        2) Linux root (rest, type 8304 / ext4)
+   sudo mkfs.fat -F 32 -n ESP /dev/nvme0n1p1
+   sudo mkfs.ext4 -L nixos /dev/nvme0n1p2
+
+   sudo mount /dev/nvme0n1p2 /mnt
+   sudo mkdir -p /mnt/boot
+   sudo mount /dev/nvme0n1p1 /mnt/boot
+   ```
+
+3. **Generate the real hardware config — REQUIRED before installing**:
+
+   ```bash
+   make generate-hardware            # ROOT=/mnt (default)
+   ```
+
+   This runs `nixos-generate-config --root /mnt`, writes the result to
+   `./hardware-configuration.nix`, and pins it with `git update-index
+   --skip-worktree` so your disk layout is never committed to this public repo.
+   To reset the placeholder (another machine / reinstall):
+
+   ```bash
+   make restore-placeholder
+   ```
+
+   > **Order matters!** The placeholder root is tmpfs *only so the flake
+   > evaluates*. If you install without running `generate-hardware` first, the
+   > system boots to a non-persistent, in-memory root. Run it before
+   > `nixos-install`. Also confirm `/mnt` really holds your disks: the generated
+   > `hardware-configuration.nix` should list real root/swap, not `tmpfs`.
+
+4. **Confirm the target is EFI** — `configuration.nix` sets `systemd-boot` +
+   `canTouchEfiVariables`. Adjust `boot.loader.*` for BIOS/MBR. Review the
+   generated `hardware-configuration.nix` (root/swap) as needed.
+
+5. **Install**:
 
    ```bash
    sudo nixos-install --flake .#hostname
    ```
 
-   (Once the generated `hardware-configuration.nix` is committed, repeat the
-   same against your install media as needed.)
+   (Builds the full closure and activates into `/mnt`; needs network, can take
+   a while.)
 
-6. **Extras on the new install** (not yet in this repo — per-machine):
-   - network interfaces / wifi, `networking.hostName`, firewall
-   - boot device (the placeholder uses `systemd-boot` + EFI)
-   - confirm `users.users.sam.initialPassword` is changed / a key added
+6. **Set your real password** (not stored in this public repo):
+
+   ```bash
+   passwd          # first log in as `sam`, then set a real password
+   ```
+
+7. **Networking is handled globally** via `networking.networkmanager.enable =
+   true` (works on any machine, wired or wireless — see "Networking & wifi"
+   below).
+
+## Post-install & pre-bootstrap checklist
+
+Run these once, right after the fresh install boots (auto-login lands you on
+the mangowm desktop, with ghostty via `Super+Return`), before using the repo
+as your working config:
+
+1. **Set your user password** (not committed to this public repo; required before
+   `sudo`). `sam` auto-logs into the desktop but is created with no password:
+
+   ```bash
+   passwd
+   ```
+
+2. **Connect to wifi** — NetworkManager is already enabled globally:
+
+   ```bash
+   nmcli device wifi list
+   nmcli device wifi connect "SSID" password "pw"   # use `sudo nmcli` if polkit denies
+   nmcli -t connection show --active      # confirm connected
+   ```
+   (GUI management lives in "Networking & wifi" below.)
+
+3. **Set up a GitHub SSH key** so you can push changes back to the repo:
+   ```bash
+   ssh-keygen -t ed25519 -C "you@example.com"   # accept default ~/.ssh/id_ed25519
+   cat ~/.ssh/id_ed25519.pub                     # copy the output
+   ```
+   Add the public key: GitHub → **Settings → SSH and GPG keys → New SSH key**.
+   Test authentication:
+   ```bash
+   ssh -T git@github.com
+   # -> Hi <you>! You've successfully authenticated, but GitHub does not
+   #    provide shell access.
+   ```
+
+4. **Point the remote at your SSH URL** so future `git pull`/`push` use the
+   key instead of HTTPS prompts:
+   ```bash
+   git remote set-url origin git@github.com:<you>/nixos-config.git
+   git remote -v                                 # confirm
+   ```
+
+5. You're now ready to edit config and apply changes:
+   ```bash
+   git pull       # if you cloned earlier
+   ...edit...
+   git add -A && git commit -m "..." && git push
+   sudo nixos-rebuild switch --flake .#hostname
+   ```
+
+## Networking & wifi
+
+`networking.networkmanager.enable = true` is set globally in `configuration.nix`,
+so NetworkManager drives both wired and wireless on any machine. No per-machine
+networking is committed (keeps the repo public-portable).
+
+From a bare mangowm desktop, open ghostty with `Super+Return` and use `nmcli`:
+
+```bash
+nmcli device status                                  # devices & state
+nmcli device wifi list                               # scan
+nmcli device wifi connect "SSID" password "pw"       # connect (profile is saved)
+```
+
+To manage saved connections graphically, add `networkmanagerapplet` to
+`home.packages` and run `nm-connection-editor`. (A tray applet such as
+`nm-applet` needs a system tray; mangowm's bar may not provide one, so CLI /
+`nm-connection-editor` are the reliable routes on this desktop.)
+
+## Fallback / recovery (when mangowm hangs or exits)
+
+greetd runs mangowm on VT 1. Recovery paths:
+
+- **Compositor exits/crashes** → greetd falls back to its `default_session` =
+  `tuigreet` (a TUI greeter); pick mangowm again from there.
+- **Compositor freezes** (no fall-through) → switch to a text console with
+  **Ctrl+Alt+F2** … F6 (NixOS runs `agetty` logins on VTs 2–6 by default):
+
+  ```bash
+  journalctl -b -u greetd --no-pager | tail -50
+  sudo systemctl restart greetd
+  ```
+
+- Mangowm keys: `Super+m` quits to the greeter; `Super+r` reloads the config.
+
+Optional: a passwordless recovery console on a dedicated VT (auto-login):
+
+```nix
+# configuration.nix (NixOS)
+systemd.services."getty@tty3" = {
+  serviceConfig = {
+    ExecStart = [
+      ""   # clear the upstream ExecStart
+      "${pkgs.util-linux}/sbin/agetty --autologin sam --noclear tty3 linux"
+    ];
+  };
+};
+```
 
 ---
 
@@ -185,7 +327,7 @@ nix eval .#nixosConfigurations.vm.config.home-manager.users.sam.wayland.windowMa
 # -> should be [ ]
 
 nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
-# -> [ "-vga" "none" "-device" "virtio-gpu-pci,gl=on" "-display" "gtk,gl=on" ]
+# -> [ "-vga" "none" "-display" "gtk,gl=on" "-device" "virtio-vga-gl" ]
 ```
 
 ---
@@ -200,4 +342,4 @@ nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
 | `hardware-configuration.nix` | **Placeholder** real-hardware FS — replace on install |
 | `vm-root.nix` | Low-precedence tmpfs root so `vm` passes `nix flake check` |
 | `bitwig.nix` | Imported home-manager module (packages) |
-| `Makefile` | `build`, `run`, `run-vm-cli` targets |
+| `Makefile` | `build`, `build-vm`, `check`, `run`, `run-cli`, `generate-hardware`, `restore-placeholder` |

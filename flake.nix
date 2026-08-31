@@ -7,6 +7,14 @@
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # --- UEFI Secure Boot (lanzaboote) ---
+    # Uncomment this input AND the `lanzaboote` ref below (and the
+    # boot.lanzaboote block in configuration.nix), then:
+    #   nix flake lock ; sudo nixos-rebuild switch --flake .#hostname
+    # lanzaboote = {
+    #   url = "github:nix-community/lanzaboote";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
   };
 
   outputs =
@@ -14,6 +22,7 @@
       nixpkgs,
       home-manager,
       mangowm,
+      # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
     let
@@ -38,6 +47,7 @@
               home-manager.users.sam = ./home.nix;
             }
             mangowm.nixosModules.mango
+            # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
           ] ++ extraModules;
         };
     in
