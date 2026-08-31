@@ -5,6 +5,56 @@
 # modules/home/ and are imported below.
 { pkgs, ... }:
 
+let
+  shellAliases = {
+    # bitwig backup steps
+    bkupBitwig = "AWS_PROFILE=wasabi rclone copy /home/sam/Bitwig\ Studio wasabi:sideffectstudios/Tracks/Bitwig\ Studio -vv --update";
+    bkupBitwigMeta = "AWS_PROFILE=wasabi rclone copy /home/sam/.BitwigStudio wasabi:sideffectstudios/Tracks/.BitwigStudio -vv --update";
+
+    # git workflow
+    ga = "git add";
+    gc = "git commit";
+    gco = "git checkout";
+    gcp = "git cherry-pick";
+    gdiff = "git diff";
+    gl = "git prettylog";
+    gmff = "git merge --ff-only";
+    gp = "git push";
+    gpffo = "git pull --ff-only";
+    gpfwl = "git push --force-with-lease";
+    gs = "git status";
+    gt = "git tag";
+
+    # hashistack config workflow
+    hscfg = "cd ~/Development/hashistack/hashistack-config/";
+    hscfgnv = "cd ~/Development/hashistack/hashistack-config/ && nvim";
+
+    # nomad job workflow
+    njp = "nomad stop -purge $1";
+    njpl = "nomad plan $1";
+    njr = "nomad run $1";
+    njs = "nomad stop $1";
+    njst = "nomad status $1";
+
+    # rss-social workflow
+    rsss = "cd ~/Development/rss-social/";
+    rsssnv = "cd ~/Development/rss-reader/ && nvim";
+
+    # terraform workflow
+    tfmt = "tf fmt -recursive";
+    tfi = "terraform init";
+    tfp = "terraform plan";
+    tfa = "terraform apply";
+
+    # vim workflow
+    vim = "nvim";
+
+    # personal site workflow
+    website = "cd ~/Development/samuel-allen.com/";
+    websitenv = "cd ~/Development/samuel-allen.com/ && nvim";
+    websitetmux = "cd ~/Development/samuel-allen.com/ && ./tmux-session.sh";
+  };
+in
 {
   imports = [
     ./bitwig.nix
@@ -42,6 +92,7 @@
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
+    rclone
     # steam
     thorium-reader
     yazi
@@ -55,7 +106,16 @@
   };
 
   programs.home-manager.enable = true;
-  # pi-coding-agent appears to be on the unstable branch, not the current 26.05
+  programs.bash = {
+    enable = true;
+    shellOptions = [ ];
+    historyControl = [
+      "ignoredups"
+      "ignorespace"
+    ];
+    initExtra = builtins.readFile ./bashrc;
+    shellAliases = shellAliases;
+  };
   programs.pi-coding-agent.enable = true;
 
   targets.genericLinux.enable = true;
