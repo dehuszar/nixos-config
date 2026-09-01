@@ -87,6 +87,7 @@ in
     inkscape
     libation
     noto-fonts
+    obsidian
     openscad
     orca-slicer
     proton-authenticator
