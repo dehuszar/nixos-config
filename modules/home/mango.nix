@@ -42,9 +42,11 @@
 
         # App launchers
         "Super,Return,spawn,ghostty" # Terminal
-        "Super,w,spawn,wiremix" # Audio control
         "Super,b,spawn,firefox" # Web browser
-        "Super,c,spawn,nvim" # Nvim code editor
+
+        # TUI launchers
+        "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
+        "Super,w,spawn,ghostty -e wiremix" # Audio control (TUI)
       ];
     };
     # Raw config lines appended verbatim (unsupported/advanced opts)

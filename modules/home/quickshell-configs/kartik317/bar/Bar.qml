@@ -41,17 +41,17 @@ PanelWindow {
     // Using setsid to create new session and properly detach
     Process {
         id: launchTerminal
-        command: ["setsid", "ghostty"]
+        command: ["ghostty"]
     }
     
     Process {
         id: launchImpala
-        command: ["setsid", "nmtui"]
+        command: ["ghostty", "-e", "impala"]
     }
     
     Process {
         id: launchWiremix
-        command: ["setsid", "wiremix"]
+        command: ["ghostty", "-e", "wiremix"]
     }
 
     RowLayout {
@@ -209,7 +209,7 @@ PanelWindow {
                         onExited: parent.color = root.colFg
                         
                         onClicked: {
-                            console.log("=== Launching nmtui (network) ===")
+                            console.log("=== Launching impala (network) ===")
                             launchImpala.running = true
                         }
                     }

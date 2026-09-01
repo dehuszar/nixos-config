@@ -11,7 +11,7 @@ RowLayout {
 
     Process {
         id: nmProcess
-        command: ["kitty", "-e", "nmtui"]
+        command: ["ghostty", "-e", "impala"]
     }
 
     property var wifiDevice: Networking.devices.values.find(d => d.type === DeviceType.Wifi)
