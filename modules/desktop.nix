@@ -31,6 +31,8 @@
 
   environment.systemPackages = [
     pkgs.greetd
+    pkgs.qt6.qtbase
+    pkgs.qt6.qt3d
     pkgs.tuigreet
   ];
 }

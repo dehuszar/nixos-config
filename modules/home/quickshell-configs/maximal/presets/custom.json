@@ -1,0 +1,42 @@
+{
+  "left": [
+    "Launcher",
+    "RamModule",
+    "SysInfoGroup",
+    "CurrencyConverter"
+  ],
+  "center": [
+    "Workspaces",
+    "Notifications",
+    "Notepad"
+  ],
+  "right": [
+    "Equalizer",
+    "Volume",
+    "Clipboard",
+    "PowerGroup"
+  ],
+  "inactive": [
+    "NightLight"
+  ],
+  "workspaces": {
+    "format": "roman",
+    "style": "square",
+    "transparent": true,
+    "displayMode": "role",
+    "workspaceCount": 5,
+    "showEmpty": true,
+    "showSpecial": true,
+    "showApps": true,
+    "groupApps": true,
+    "scrollEnabled": true,
+    "wrapAround": true,
+    "reverseScroll": false,
+    "iconSize": 20,
+    "maxIcons": 4
+  },
+  "theme": "",
+  "barPosition": "top",
+  "_description": "This file stores the current bar layout.",
+  "moduleSchemaVersion": 3
+}

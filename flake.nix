@@ -11,6 +11,7 @@
       url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -81,4 +82,3 @@
       };
     };
 }
-

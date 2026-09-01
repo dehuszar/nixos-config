@@ -27,9 +27,11 @@
 
   environment.systemPackages = with pkgs; [
     git
+    kdePackages.qt5compat
     neovim
-    wget
+    quickshell
     # sbctl   # uncomment with the Secure Boot block above
+    wget
     yazi
   ];
   environment.variables.EDITOR = "nvim";
