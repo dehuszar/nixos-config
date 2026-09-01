@@ -5,7 +5,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
+import Qt.labs.platform as LabPlatform
 // Removed theme import - using inline colors instead
 
 PanelWindow {
@@ -34,6 +36,23 @@ PanelWindow {
     readonly property color colPeach: "#fab387"
     readonly property color colMauve: "#cba6f7"
     readonly property color colGreen: "#a6e3a1"
+    
+    // Process declarations for launching apps
+    // Using setsid to create new session and properly detach
+    Process {
+        id: launchTerminal
+        command: ["setsid", "ghostty"]
+    }
+    
+    Process {
+        id: launchImpala
+        command: ["setsid", "nmtui"]
+    }
+    
+    Process {
+        id: launchWiremix
+        command: ["setsid", "wiremix"]
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -52,16 +71,31 @@ PanelWindow {
                 anchors.centerIn: parent
                 spacing: 8
 
-                // Logo (Mango emoji instead of Arch)
+                // Logo (Mango emoji) - Click to open terminal
                 Rectangle {
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     color: "transparent"
 
                     Text {
+                        id: logoText
                         anchors.centerIn: parent
                         text: "🥭"
                         font.pixelSize: 22
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        
+                        onEntered: logoText.scale = 1.2
+                        onExited: logoText.scale = 1.0
+                        
+                        onClicked: {
+                            console.log("=== Launching Ghostty ===")
+                            launchTerminal.running = true
+                        }
                     }
                 }
 
@@ -161,10 +195,24 @@ PanelWindow {
                 anchors.centerIn: parent
                 spacing: 8
 
-                // Network (placeholder)
+                // Network - Click to open Impala
                 Text {
                     text: "📶"
                     font.pixelSize: root.fontSize
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        
+                        onEntered: parent.color = root.colBlue
+                        onExited: parent.color = root.colFg
+                        
+                        onClicked: {
+                            console.log("=== Launching nmtui (network) ===")
+                            launchImpala.running = true
+                        }
+                    }
                 }
 
                 // Separator
@@ -174,12 +222,35 @@ PanelWindow {
                     color: Qt.alpha("#cdd6f4", 0.3)
                 }
 
-                // Battery (placeholder)
+                // Battery - Click to open power settings
                 Text {
+                    id: batteryText
                     text: "🔋 85%"
-                    color: "#a6e3a1"
+                    color: root.colGreen
                     font.pixelSize: root.fontSize
                     font.family: root.fontFamily
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        
+                        onEntered: {
+                            if (batteryText) {
+                                batteryText.color = root.colYellow
+                            }
+                        }
+                        onExited: {
+                            if (batteryText) {
+                                batteryText.color = root.colGreen
+                            }
+                        }
+                        
+                        onClicked: {
+                            console.log("Opening system settings (power)")
+                            // Could open settings app or power management tool
+                        }
+                    }
                 }
 
                 // Separator
@@ -189,12 +260,26 @@ PanelWindow {
                     color: Qt.alpha("#cdd6f4", 0.3)
                 }
 
-                // Volume (placeholder)
+                // Volume - Click to open Wiremix
                 Text {
                     text: "🔊 75%"
-                    color: "#89b4fa"
+                    color: root.colBlue
                     font.pixelSize: root.fontSize
                     font.family: root.fontFamily
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        
+                        onEntered: parent.color = root.colLavender
+                        onExited: parent.color = root.colBlue
+                        
+                        onClicked: {
+                            console.log("=== Launching Wiremix ===")
+                            launchWiremix.running = true
+                        }
+                    }
                 }
 
                 // Separator

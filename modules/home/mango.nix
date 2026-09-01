@@ -39,10 +39,12 @@
         "Alt,Right,focusdir,right"
         "Alt,Up,focusdir,up"
         "Alt,Down,focusdir,down"
-        # Launch a terminal (ghostty) - press Super+Return to test mango.
-        "Super,Return,spawn,ghostty"
-        # Require the app installed; uncomment if you have them:
-        # "Alt,space,spawn,rofi -show drun"
+
+        # App launchers
+        "Super,Return,spawn,ghostty" # Terminal
+        "Super,w,spawn,wiremix" # Audio control
+        "Super,b,spawn,firefox" # Web browser
+        "Super,c,spawn,nvim" # Nvim code editor
       ];
     };
     # Raw config lines appended verbatim (unsupported/advanced opts)
