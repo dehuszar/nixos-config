@@ -75,6 +75,7 @@ in
   home.packages = with pkgs; [
     # 3D Slicers from nixpkgs 26.05
     blender
+    btop
     cura-appimage
     dbeaver-bin
     docker-sbx
@@ -82,6 +83,7 @@ in
     ghostty
     freecad
     gimp
+    impala
     inkscape
     libation
     noto-fonts
@@ -96,6 +98,7 @@ in
     rclone
     # steam
     thorium-reader
+    wiremix
     yazi
   ];
 
