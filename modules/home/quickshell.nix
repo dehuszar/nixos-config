@@ -16,13 +16,14 @@ let
   #   "maximal"          - Full ekremx25 feature set (advanced)
   #
   # THEMED VARIATIONS:
+  #   "kartik317"        - Modern pill-style bar (NEW DEFAULT)
   #   "catppuccin"       - Catppuccin Mocha theme
   #   "macos"            - macOS-inspired design
   #   "windows11"        - Windows 11 taskbar style
   #   "gnome"            - GNOME top bar aesthetic
   #   "default"          - Your original simple config
   #   "transparency-blur" - Transparency effects (Qt6 fixed)
-  activeExample = "maximal";
+  activeExample = "kartik317";
 
   # All available configs
   configs = {
@@ -33,6 +34,7 @@ let
     maximal = ./quickshell-configs/maximal;
 
     # Themed variations
+    kartik317 = ./quickshell-configs/kartik317;
     catppuccin = ./quickshell-configs/catppuccin;
     macos = ./quickshell-configs/macos;
     windows11 = ./quickshell-configs/windows11;
