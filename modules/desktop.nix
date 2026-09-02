@@ -2,7 +2,7 @@
 #
 # The graphical desktop, shared by both the `hostname` and `vm` configs:
 # mangowm (compositor), seatd (device access), greetd (login/session).
-{ pkgs, ... }:
+{ pkgs, lib, isVM, ... }:
 {
   # NixOS-level mango integration (portal, polkit, session entry).
   # `programs.mango` has no `settings`/`extraConfig` options and writes no
@@ -25,14 +25,13 @@
   };
 
   # Not sure this is going to work until I'm on real hardware
-  # services.power-profiles-daemon.enable = true;
+  services.power-profiles-daemon.enable = lib.mkIf (!isVM) true;
 
   # seatd: hands wlroots (mangowm) access to the VT + DRM device when it's not
   # running inside a systemd-logind graphical session. Fixes libseat's
   # "Permission denied" errors.
   services.seatd.enable = true;
 
-  services.tuned.enable = true;
   services.upower.enable = true;
 
   environment.systemPackages = [
