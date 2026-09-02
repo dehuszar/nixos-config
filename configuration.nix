@@ -28,7 +28,6 @@
   environment.systemPackages = with pkgs; [
     git
     kdePackages.qt5compat
-    neovim
     quickshell
     # sbctl   # uncomment with the Secure Boot block above
     wget

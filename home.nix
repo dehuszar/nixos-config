@@ -6,6 +6,8 @@
 { pkgs, ... }:
 
 let
+  # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
+  # Make sure to check modules/home if you are unsure if an alias exists.
   shellAliases = {
     # bitwig backup steps
     bkupBitwig = "AWS_PROFILE=wasabi rclone copy /home/sam/Bitwig\ Studio wasabi:sideffectstudios/Tracks/Bitwig\ Studio -vv --update";
@@ -36,6 +38,9 @@ let
     njs = "nomad stop $1";
     njst = "nomad status $1";
 
+    # neovim workflow
+    vim = "nvim";
+
     # rss-social workflow
     rsss = "cd ~/Development/rss-social/";
     rsssnv = "cd ~/Development/rss-reader/ && nvim";
@@ -45,9 +50,6 @@ let
     tfi = "terraform init";
     tfp = "terraform plan";
     tfa = "terraform apply";
-
-    # vim workflow
-    vim = "nvim";
 
     # personal site workflow
     website = "cd ~/Development/samuel-allen.com/";
@@ -59,6 +61,7 @@ in
   imports = [
     ./bitwig.nix
     ./modules/home/mango.nix
+    ./modules/home/neovim.nix
     ./modules/home/quickshell.nix
     ./modules/home/vm-resize.nix
   ];
@@ -73,8 +76,8 @@ in
   home.stateVersion = "26.11";
 
   home.packages = with pkgs; [
-    # 3D Slicers from nixpkgs 26.05
     blender
+    bluetui
     btop
     cura-appimage
     dbeaver-bin
