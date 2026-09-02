@@ -10,11 +10,6 @@
   # side in modules/home/mango.nix.
   programs.mango.enable = true;
 
-  # seatd: hands wlroots (mangowm) access to the VT + DRM device when it's not
-  # running inside a systemd-logind graphical session. Fixes libseat's
-  # "Permission denied" errors.
-  services.seatd.enable = true;
-
   services.greetd = {
     enable = true;
     settings = {
@@ -28,6 +23,17 @@
       };
     };
   };
+
+  # Not sure this is going to work until I'm on real hardware
+  # services.power-profiles-daemon.enable = true;
+
+  # seatd: hands wlroots (mangowm) access to the VT + DRM device when it's not
+  # running inside a systemd-logind graphical session. Fixes libseat's
+  # "Permission denied" errors.
+  services.seatd.enable = true;
+
+  services.tuned.enable = true;
+  services.upower.enable = true;
 
   environment.systemPackages = [
     pkgs.greetd

@@ -17,7 +17,7 @@
       # force llvmpipe even when virgl is available, turning the screen black.
       # If virgl is ever unavailable, temporarily re-add those vars.
       env = [ ];
-      exec-once = "quickshell";
+      exec-once = "noctalia";
 
       # Window effects
       border_radius = 6;

@@ -62,7 +62,7 @@ in
     ./bitwig.nix
     ./modules/home/mango.nix
     ./modules/home/neovim.nix
-    ./modules/home/quickshell.nix
+    ./modules/home/noctalia.nix
     ./modules/home/vm-resize.nix
   ];
 

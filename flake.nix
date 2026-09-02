@@ -11,6 +11,10 @@
       url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
@@ -28,6 +32,7 @@
       home-manager,
       mangowm,
       quickshell,
+      noctalia,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
