@@ -129,4 +129,8 @@ in
 
   targets.genericLinux.enable = true;
   targets.genericLinux.gpu.enable = true;
+
+  xdg.configFile = {
+    "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;
+  };
 }

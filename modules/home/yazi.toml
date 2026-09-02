@@ -1,0 +1,24 @@
+[plugin]
+prepend_preloaders = [
+  # Do not preload files in mounted locations:
+  # Environment variable won't work here.
+  # Using absolute path instead.
+  { name = "/run/user/1000/gvfs/**/*", mime = "", run = "noop" },
+
+  # For mounted hard disk/drive
+  { name = "/run/media/sam/**/*", mime = "", run = "noop" },
+]
+prepend_previewers = [
+  # Allow to preview folder.
+  { name = "*/", mime = "", run = "folder" },
+
+  # Do not previewing files in mounted locations.
+  # Uncomment the line below to allow previewing text files.
+  # { mime = "{text/*,application/x-subrip}", run = "code" },
+
+  # Using absolute path.
+  { name = "/run/user/1000/gvfs/**/*", mime = "", run = "noop" },
+
+  # For mounted hard disk/drive.
+  { name = "/run/media/sam/**/*", mime = "", run = "noop" },
+]
