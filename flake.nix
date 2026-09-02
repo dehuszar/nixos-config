@@ -34,6 +34,19 @@
     let
       inherit (nixpkgs) lib;
 
+      # Check for private modules directory in sibling repo
+      privateDir = ../nixos-config-private;
+      hasPrivate = builtins.pathExists privateDir;
+      
+      # Auto-load private modules if they exist
+      privateModules = if hasPrivate then
+        let
+          files = builtins.attrNames (builtins.readDir privateDir);
+          nixFiles = builtins.filter (f: lib.hasSuffix ".nix" f && f != "default.nix") files;
+        in
+          map (f: privateDir + "/${f}") nixFiles
+      else [];
+      
       # Shared module list for every machine. `isVM` is injected via
       # specialArgs so each config can flip VM-only workarounds.
       mkNixos =
@@ -59,6 +72,7 @@
             mangowm.nixosModules.mango
             # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
           ]
+          ++ privateModules
           ++ extraModules;
         };
     in
