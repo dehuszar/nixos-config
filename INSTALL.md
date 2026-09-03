@@ -26,10 +26,11 @@ ping -c 1 github.com
 ## Quick start (interactive script)
 
 ```bash
-curl -L https://raw.githubusercontent.com/sam/nixos-config/main/install.sh | bash
+curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | bash
 ```
 
 The script will:
+
 1. Install `git` if it's missing (live ISO usually has it).
 2. Clone this repo (or use the current directory).
 3. Show available disks and ask which one to target.
@@ -68,39 +69,45 @@ need to manually clear the disk beforehand (e.g. with `sgdisk -Z` or `wipefs`).
 
 Disk layout created by `modules/disko.nix`:
 
-| Partition | Size | Type | Content |
-|---|---|---|---|
-| ESP | 512 MiB | EF00 | vfat `/boot` |
-| luks | remainder | 8304 (Linux) | LUKS2 container → ext4 `/` |
+| Partition | Size      | Type         | Content                    |
+| --------- | --------- | ------------ | -------------------------- |
+| ESP       | 512 MiB   | EF00         | vfat `/boot`               |
+| luks      | remainder | 8304 (Linux) | LUKS2 container → ext4 `/` |
 
 ## Post-install checklist (first boot)
 
 After rebooting into the installed system:
 
 1. **Set your user password** (not stored in this repo):
+
    ```bash
    passwd
    ```
 
 2. **Connect to Wi-Fi** (NetworkManager is enabled globally):
+
    ```bash
    nmcli device wifi list
    nmcli device wifi connect "SSID" password "pw"
    ```
 
 3. **Set up GitHub SSH key** (so you can push config changes):
+
    ```bash
    ssh-keygen -t ed25519 -C "you@example.com"
    cat ~/.ssh/id_ed25519.pub
    ```
+
    Add the key at GitHub → Settings → SSH and GPG keys → New SSH key.
 
 4. **Switch the remote to SSH**:
+
    ```bash
    git remote set-url origin git@github.com:<you>/nixos-config.git
    ```
 
 5. **Apply future changes**:
+
    ```bash
    sudo nixos-rebuild switch --flake .#hostname
    ```

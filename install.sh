@@ -1,42 +1,123 @@
 #!/usr/bin/env bash
 # install.sh
 #
-# One-shot installer for this NixOS configuration.
-# Run from the NixOS minimal installer (live ISO) as root.
-#
-# Usage:
-#   curl -L <raw-url> | bash
-#   # or, after cloning the repo:
-#   bash install.sh
-#
-# This script partitions the target disk, creates a LUKS-encrypted root
-# filesystem, installs the NixOS closure, and sets up the bootloader.
-# ALL EXISTING DATA ON THE TARGET DISK WILL BE DESTROYED.
-
+# One-shot install script. Every step is meant to run unattended from the
+# minimal installer shell, so we fail loudly and early rather than limping
+# into a disko run against a half-configured nix.
 set -euo pipefail
 
-REPO_URL="https://github.com/sam/nixos-config.git"  # change if forked
-FLAKE_ATTR="hostname"
-DISK_NAME="main"
+NIX_CONF="/etc/nix/nix.conf"
+REQUIRED_FEATURES=("nix-command" "flakes")
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-warn() {
-  echo "⚠️  $*" >&2
+confirm() {
+  local prompt="$1"
+  read -rp "$prompt [y/N] " answer </dev/tty
+  [[ "$answer" =~ ^[Yy]$ ]]
 }
-
+log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 die() {
-  echo "❌  $*" >&2
+  printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2
   exit 1
 }
 
-confirm() {
-  local prompt="$1"
-  read -rp "$prompt [y/N] " answer < /dev/tty
-  [[ "$answer" =~ ^[Yy]$ ]]
+# --- feature verification -------------------------------------------------
+
+# Extracts the experimental-features line from a `nix show-config` blob and
+# confirms every entry in REQUIRED_FEATURES appears as a whole word.
+# Returns 0 (pass) or 1 (fail).
+has_all_features() {
+  local conf_output="$1"
+  local line
+  line="$(grep -E '^experimental-features' <<<"$conf_output" || true)"
+  [[ -n "$line" ]] || return 1
+  for feat in "${REQUIRED_FEATURES[@]}"; do
+    grep -qw "$feat" <<<"$line" || return 1
+  done
+  return 0
 }
+
+# Checks BOTH the client-side config and the config the nix-daemon is
+# actually enforcing. Both must pass — matches the failure mode we saw
+# where NIX_CONFIG satisfied the client but not the daemon disko calls
+# under sudo.
+verify_nix_features() {
+  local user_conf daemon_conf
+  user_conf="$(nix show-config 2>/dev/null)" ||
+    die "'nix show-config' failed — is nix on PATH in this shell?"
+  daemon_conf="$(sudo nix show-config 2>/dev/null)" ||
+    die "'sudo nix show-config' failed — check sudo access / nix-daemon status."
+
+  local user_ok=1 daemon_ok=1
+  has_all_features "$user_conf" && user_ok=0
+  has_all_features "$daemon_conf" && daemon_ok=0
+
+  if [[ $user_ok -eq 0 && $daemon_ok -eq 0 ]]; then
+    return 0
+  fi
+
+  warn "client config:  $([[ $user_ok -eq 0 ]] && echo OK || echo MISSING nix-command/flakes)"
+  warn "daemon config:  $([[ $daemon_ok -eq 0 ]] && echo OK || echo MISSING nix-command/flakes)"
+  return 1
+}
+
+# Edits /etc/nix/nix.conf directly (not NIX_CONFIG — that doesn't survive
+# sudo's env reset) and restarts nix-daemon so it picks up the change,
+# then re-verifies. Dies with a clear message if it still doesn't stick,
+# rather than letting later disko/nixos-install steps fail with a
+# confusing error.
+ensure_nix_features() {
+  log "Checking nix-command/flakes availability (client + daemon)..."
+  if verify_nix_features; then
+    log "nix-command and flakes already enabled. Continuing."
+    return 0
+  fi
+
+  warn "Experimental features not fully enabled. Patching ${NIX_CONF}..."
+
+  if grep -q '^experimental-features' "$NIX_CONF" 2>/dev/null; then
+    sudo sed -i -E 's/^experimental-features.*/experimental-features = nix-command flakes/' "$NIX_CONF"
+  else
+    echo "experimental-features = nix-command flakes" | sudo tee -a "$NIX_CONF" >/dev/null
+  fi
+
+  log "Restarting nix-daemon..."
+  sudo systemctl restart nix-daemon
+
+  # give the daemon a few seconds to come back before we hammer it
+  local i
+  for i in $(seq 1 10); do
+    sudo systemctl is-active --quiet nix-daemon && break
+    sleep 1
+  done
+  sudo systemctl is-active --quiet nix-daemon ||
+    die "nix-daemon did not return to an active state after restart. Check: sudo systemctl status nix-daemon"
+
+  log "Re-verifying..."
+  if ! verify_nix_features; then
+    die "nix-command/flakes still not enabled after patching ${NIX_CONF} and restarting nix-daemon. \
+Check 'nix show-config' and 'sudo nix show-config' manually. If a later command names a DIFFERENT \
+feature (e.g. auto-allocate-uids, cgroups), that's a separate flag — add it to REQUIRED_FEATURES above \
+and re-run, don't assume this same fix applies."
+  fi
+
+  log "nix-command and flakes confirmed enabled for both client and daemon."
+}
+
+# --- main -------------------------------------------------------------
+
+ensure_nix_features
+
+# Everything below only runs once the check above has either passed or
+# fixed-and-reverified the config, so disko/nixos-install never run
+# against a nix that can't do what they're about to ask of it.
+
+REPO_URL="https://github.com/sam/nixos-config.git" # change if forked
+FLAKE_ATTR="hostname"
+DISK_NAME="main"
 
 # ---------------------------------------------------------------------------
 # Pre-flight checks
@@ -67,7 +148,7 @@ if ! ping -c 1 -W 3 github.com >/dev/null 2>&1; then
   echo "Choose 'Activate a connection', select your SSID, and enter the password."
   echo "Come back here and press Enter to continue."
   echo ""
-  read -rp "Press Enter once you have a network connection..." < /dev/tty
+  read -rp "Press Enter once you have a network connection..." </dev/tty
 
   if ! ping -c 1 -W 3 github.com >/dev/null 2>&1; then
     die "Still no internet connection. Please fix networking and re-run."
@@ -105,7 +186,7 @@ echo "════════════════════════�
 lsblk -d -o NAME,SIZE,TYPE,MODEL,TRAN || lsblk -d -o NAME,SIZE,TYPE
 
 echo ""
-read -rp "Enter the target disk (e.g. /dev/nvme0n1 or /dev/sda): " DISK_DEVICE < /dev/tty
+read -rp "Enter the target disk (e.g. /dev/nvme0n1 or /dev/sda): " DISK_DEVICE </dev/tty
 
 if [[ -z "$DISK_DEVICE" ]]; then
   die "No disk selected."
