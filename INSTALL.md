@@ -23,54 +23,53 @@ quit back to the shell. Verify with:
 ping -c 1 github.com
 ```
 
-## Quick start (interactive script)
+## Install
+
+Clone the repo and enter the directory:
 
 ```bash
-curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | bash
+git clone <repo-url>
+cd nixos-config
+```
+
+Then run the installer:
+
+```bash
+bash install.sh
 ```
 
 The script will:
 
 1. Check that `nix-command` and `flakes` are available (client **and** daemon).
 2. Install `git` if it's missing (live ISO usually has it).
-3. Clone this repo (or use the current directory).
-4. Show available disks and ask which one to target.
-5. Warn you that **all data on the target disk will be destroyed**.
-6. Run `disko-install` — partition, LUKS-encrypt, format, install, and set up
+3. Show available disks and ask which one to target.
+4. Warn you that **all data on the target disk will be destroyed**.
+5. Run `disko-install` — partition, LUKS-encrypt, format, install, and set up
    the bootloader in one step.
-7. Prompt to reboot.
+6. Prompt to reboot.
 
-Because the minimal installer ISO mounts `/etc/nix/nix.conf` read-only, the
-script sets the `NIX_CONFIG` environment variable to enable `nix-command` and
-`flakes` without touching the system file.  `NIX_CONFIG` is preserved across
-`sudo` so every `nix` invocation sees the same settings.
-
-> **VM testing** — run the script with `--dry-run` (or `DRY_RUN=1`) to exercise
-> all checks, disk selection, and prompts without actually running
-> `disko-install`:
+> **Dry run** — set `DRY_RUN=1` to exercise all checks and prompts without
+> touching the disk:
 >
 > ```bash
-> curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | DRY_RUN=1 bash
+> DRY_RUN=1 bash install.sh
 > ```
 
 You will be asked to set a LUKS password during formatting. This is the same
 password you will enter at every boot to unlock the root filesystem.
 
-## Manual steps (if you prefer not to curl-pipe)
+### Alternative: Manual `disko-install`
+
+If you prefer not to use the wrapper script:
 
 ```bash
-# 1. Connect to Wi-Fi (if not on wired ethernet)
-#    Run 'nmtui', pick Activate a connection, enter password, then quit.
-#    Verify with: ping -c 1 github.com
+# 1. Connect to Wi-Fi (if needed)
+nmtui
 
-# 2. Get the repo
-git clone <repo-url>
-cd nixos-config
-
-# 3. Find your disk
+# 2. Find your disk
 lsblk
 
-# 4. Install — replace /dev/nvme0n1 with your actual device
+# 3. Install — replace /dev/nvme0n1 with your actual device
 sudo nix run github:nix-community/disko/latest#disko-install -- \
   --flake .#hostname --disk main /dev/nvme0n1
 ```
@@ -156,3 +155,24 @@ sudo nix run github:nix-community/disko/latest#disko-install -- \
 
 Make sure you are inside the repo directory and `flake.nix` exists. The dot in
 `.#hostname` refers to the current directory as the flake root.
+
+### "I need to start over (LUKS password was empty or install failed)"
+
+If the LUKS password prompt flashed by without waiting for input (resulting in
+an empty passphrase) or the bootloader installation failed with
+`/boot is not a mounted partition`, you need to re-format and re-install from
+scratch:
+
+```bash
+sudo nix run github:nix-community/disko/latest#disko-install -- \
+  --flake .#hostname \
+  --disk main /dev/nvme0n1
+```
+
+**Tip:** make sure you are in a proper TTY where the password prompt actually
+blocks and waits for input. If you're SSH'd in or piping the install script,
+switch to a virtual console (`Ctrl+Alt+F2`) before running the command.
+
+The install is idempotent — `disko-install` will wipe the disk, recreate the
+partition table, prompt you for a fresh LUKS passphrase, and attempt the
+bootloader installation again.

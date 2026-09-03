@@ -193,23 +193,14 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Clone / locate the repo
+# 7. Verify we are inside the repo
 # ---------------------------------------------------------------------------
 
-REPO_URL="https://github.com/dehuszar/nixos-config.git"
 FLAKE_ATTR="hostname"
 DISK_NAME="main"
 
-if [[ -f flake.nix ]]; then
-  REPO_DIR=$(pwd)
-  log "Using current directory: $REPO_DIR"
-else
-  REPO_DIR="/tmp/nixos-config"
-  log "Cloning repo into $REPO_DIR..."
-  rm -rf "$REPO_DIR"
-  git clone "$REPO_URL" "$REPO_DIR"
-  cd "$REPO_DIR"
-fi
+[[ -f flake.nix ]] || die "flake.nix not found — run this script from inside the cloned repo."
+log "Using repo at: $(pwd)"
 
 # ---------------------------------------------------------------------------
 # 8. Identify target disk
@@ -275,7 +266,7 @@ echo ""
 
 sudo_nix nix run github:nix-community/disko/latest#disko-install -- \
   --flake ".#${FLAKE_ATTR}" \
-  --disk "${DISK_NAME}" "${DISK_DEVICE}"
+  --disk "${DISK_NAME}" "${DISK_DEVICE}" </dev/tty
 
 log "Installation complete!"
 
