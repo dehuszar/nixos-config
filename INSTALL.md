@@ -31,13 +31,27 @@ curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh 
 
 The script will:
 
-1. Install `git` if it's missing (live ISO usually has it).
-2. Clone this repo (or use the current directory).
-3. Show available disks and ask which one to target.
-4. Warn you that **all data on the target disk will be destroyed**.
-5. Run `disko-install` — partition, LUKS-encrypt, format, install, and set up
+1. Check that `nix-command` and `flakes` are available (client **and** daemon).
+2. Install `git` if it's missing (live ISO usually has it).
+3. Clone this repo (or use the current directory).
+4. Show available disks and ask which one to target.
+5. Warn you that **all data on the target disk will be destroyed**.
+6. Run `disko-install` — partition, LUKS-encrypt, format, install, and set up
    the bootloader in one step.
-6. Prompt to reboot.
+7. Prompt to reboot.
+
+Because the minimal installer ISO mounts `/etc/nix/nix.conf` read-only, the
+script sets the `NIX_CONFIG` environment variable to enable `nix-command` and
+`flakes` without touching the system file.  `NIX_CONFIG` is preserved across
+`sudo` so every `nix` invocation sees the same settings.
+
+> **VM testing** — run the script with `--dry-run` (or `DRY_RUN=1`) to exercise
+> all checks, disk selection, and prompts without actually running
+> `disko-install`:
+>
+> ```bash
+> curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | DRY_RUN=1 bash
+> ```
 
 You will be asked to set a LUKS password during formatting. This is the same
 password you will enter at every boot to unlock the root filesystem.

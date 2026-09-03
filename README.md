@@ -138,7 +138,7 @@ read comfortably from the installer TTY/CLI.  Two ways to run it:
 
 **Quick (interactive script)** — no `make` required:
 ```bash
-curl -L https://raw.githubusercontent.com/sam/nixos-config/main/install.sh | bash
+curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | bash
 ```
 
 **Manual** — if you prefer not to pipe a script:

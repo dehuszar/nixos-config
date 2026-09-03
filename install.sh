@@ -1,153 +1,181 @@
 #!/usr/bin/env bash
-# install.sh
 #
-# One-shot install script. Every step is meant to run unattended from the
-# minimal installer shell, so we fail loudly and early rather than limping
-# into a disko run against a half-configured nix.
+# install.sh — NixOS one-shot installer for the minimal installer ISO
+#
+# Run this on the NixOS minimal installer (or any live environment with Nix).
+# The script checks prerequisites, clones the repo, asks for a target disk, and
+# runs disko-install to partition, LUKS-encrypt, format, and install in one step.
+#
+# Because the minimal installer mounts /etc/nix/nix.conf read-only, we use the
+# NIX_CONFIG environment variable to enable nix-command and flakes instead of
+# editing the system file.  NIX_CONFIG is exported here and preserved across
+# every sudo invocation.
+#
+# Environment:
+#   NIX_CONFIG   – inline nix.conf overrides (set automatically by this script).
+#   DRY_RUN      – set to any non-empty value (or pass --dry-run) to print the
+#                  disko-install command and exit without touching any disk.
+#
 set -euo pipefail
 
-NIX_CONF="/etc/nix/nix.conf"
-REQUIRED_FEATURES=("nix-command" "flakes")
+# ---------------------------------------------------------------------------
+# 0. Optional flags
+# ---------------------------------------------------------------------------
+
+for arg in "$@"; do
+  case "$arg" in
+    --help|-h)
+      cat <<'HELP'
+Usage: ./install.sh [OPTIONS]
+
+Options:
+  --dry-run    Print the disko-install command and exit (do not write to disk).
+  --help, -h   Show this message.
+
+Environment:
+  NIX_CONFIG   Inline nix configuration.  Exported automatically by this script.
+  DRY_RUN      Set to any non-empty value to enable dry-run mode.
+
+Examples:
+  # Normal install (interactive)
+  sudo bash install.sh
+
+  # Dry-run inside a test VM
+  DRY_RUN=1 bash install.sh
+HELP
+      exit 0
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      ;;
+  esac
+done
 
 # ---------------------------------------------------------------------------
-# Helpers
+# 1. Nix client configuration (set before any nix command runs)
 # ---------------------------------------------------------------------------
+
+# The minimal installer ISO mounts /etc/nix/nix.conf read-only.  We override
+# settings here so we never need to touch the system file or restart nix-daemon.
+export NIX_CONFIG="experimental-features = nix-command flakes"
+
+# Wrapper that preserves NIX_CONFIG across sudo.  sudo resets the environment
+# by default, which would silently drop our NIX_CONFIG override.
+sudo_nix() {
+  if [[ $EUID -eq 0 ]]; then
+    "$@"
+  else
+    sudo --preserve-env=NIX_CONFIG "$@"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# 2. Helpers
+# ---------------------------------------------------------------------------
+
+log()   { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+warn()  { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
+die()   { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
 confirm() {
   local prompt="$1"
+  local answer
   read -rp "$prompt [y/N] " answer </dev/tty
   [[ "$answer" =~ ^[Yy]$ ]]
 }
-log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
-die() {
-  printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2
-  exit 1
-}
 
-# --- feature verification -------------------------------------------------
+# ---------------------------------------------------------------------------
+# 3. Verify nix experimental features
+# ---------------------------------------------------------------------------
 
-# Extracts the experimental-features line from a `nix show-config` blob and
-# confirms every entry in REQUIRED_FEATURES appears as a whole word.
-# Returns 0 (pass) or 1 (fail).
+REQUIRED_FEATURES=("nix-command" "flakes")
+
+# Return 0 if every feature in REQUIRED_FEATURES appears as a whole word in the
+# given `nix config show` output.
 has_all_features() {
-  local conf_output="$1"
+  local config_output="$1"
   local line
-  line="$(grep -E '^experimental-features' <<<"$conf_output" || true)"
+  line=$(grep -E '^experimental-features' <<< "$config_output" || true)
   [[ -n "$line" ]] || return 1
   for feat in "${REQUIRED_FEATURES[@]}"; do
-    grep -qw "$feat" <<<"$line" || return 1
+    grep -qw "$feat" <<< "$line" || return 1
   done
-  return 0
 }
 
-# Checks BOTH the client-side config and the config the nix-daemon is
-# actually enforcing. Both must pass — matches the failure mode we saw
-# where NIX_CONFIG satisfied the client but not the daemon disko calls
-# under sudo.
+# Check both the current-user client config and the root/daemon config.
+# Both must pass before we run any nix command that hits the store.
 verify_nix_features() {
   local user_conf daemon_conf
-  user_conf="$(nix show-config 2>/dev/null)" ||
-    die "'nix show-config' failed — is nix on PATH in this shell?"
-  daemon_conf="$(sudo nix show-config 2>/dev/null)" ||
-    die "'sudo nix show-config' failed — check sudo access / nix-daemon status."
+
+  user_conf=$(nix config show 2>/dev/null) ||
+    die "'nix config show' failed — is nix on PATH?"
+
+  daemon_conf=$(sudo_nix nix config show 2>/dev/null) ||
+    die "'sudo nix config show' failed — check sudo access / nix-daemon."
 
   local user_ok=1 daemon_ok=1
-  has_all_features "$user_conf" && user_ok=0
+  has_all_features "$user_conf"  && user_ok=0
   has_all_features "$daemon_conf" && daemon_ok=0
 
   if [[ $user_ok -eq 0 && $daemon_ok -eq 0 ]]; then
     return 0
   fi
 
-  warn "client config:  $([[ $user_ok -eq 0 ]] && echo OK || echo MISSING nix-command/flakes)"
-  warn "daemon config:  $([[ $daemon_ok -eq 0 ]] && echo OK || echo MISSING nix-command/flakes)"
+  warn "client config:  $([[ $user_ok  -eq 0 ]] && echo OK || echo MISSING)"
+  warn "daemon config:  $([[ $daemon_ok -eq 0 ]] && echo OK || echo MISSING)"
   return 1
 }
 
-# Edits /etc/nix/nix.conf directly (not NIX_CONFIG — that doesn't survive
-# sudo's env reset) and restarts nix-daemon so it picks up the change,
-# then re-verifies. Dies with a clear message if it still doesn't stick,
-# rather than letting later disko/nixos-install steps fail with a
-# confusing error.
 ensure_nix_features() {
-  log "Checking nix-command/flakes availability (client + daemon)..."
+  log "Checking nix experimental features (client + daemon)..."
+
   if verify_nix_features; then
-    log "nix-command and flakes already enabled. Continuing."
+    log "nix-command and flakes are enabled.  Continuing."
     return 0
   fi
 
-  warn "Experimental features not fully enabled. Patching ${NIX_CONF}..."
-
-  if grep -q '^experimental-features' "$NIX_CONF" 2>/dev/null; then
-    sudo sed -i -E 's/^experimental-features.*/experimental-features = nix-command flakes/' "$NIX_CONF"
-  else
-    echo "experimental-features = nix-command flakes" | sudo tee -a "$NIX_CONF" >/dev/null
-  fi
-
-  log "Restarting nix-daemon..."
-  sudo systemctl restart nix-daemon
-
-  # give the daemon a few seconds to come back before we hammer it
-  local i
-  for i in $(seq 1 10); do
-    sudo systemctl is-active --quiet nix-daemon && break
-    sleep 1
-  done
-  sudo systemctl is-active --quiet nix-daemon ||
-    die "nix-daemon did not return to an active state after restart. Check: sudo systemctl status nix-daemon"
-
-  log "Re-verifying..."
-  if ! verify_nix_features; then
-    die "nix-command/flakes still not enabled after patching ${NIX_CONF} and restarting nix-daemon. \
-Check 'nix show-config' and 'sudo nix show-config' manually. If a later command names a DIFFERENT \
-feature (e.g. auto-allocate-uids, cgroups), that's a separate flag — add it to REQUIRED_FEATURES above \
-and re-run, don't assume this same fix applies."
-  fi
-
-  log "nix-command and flakes confirmed enabled for both client and daemon."
+  # NIX_CONFIG is already exported above.  If the check still fails, the
+  # daemon configuration on this ISO is missing the features (rare on modern
+  # NixOS minimal installers, which normally pre-enable them).
+  die "nix-command / flakes are not enabled in the daemon configuration.  \
+On the NixOS minimal installer these features are normally pre-enabled.  \
+If you are on a custom or very old ISO, try remounting the root filesystem \
+read-write:  sudo mount -o remount,rw /"
 }
 
-# --- main -------------------------------------------------------------
-
-ensure_nix_features
-
-# Everything below only runs once the check above has either passed or
-# fixed-and-reverified the config, so disko/nixos-install never run
-# against a nix that can't do what they're about to ask of it.
-
-REPO_URL="https://github.com/sam/nixos-config.git" # change if forked
-FLAKE_ATTR="hostname"
-DISK_NAME="main"
-
 # ---------------------------------------------------------------------------
-# Pre-flight checks
+# 4. Pre-flight
 # ---------------------------------------------------------------------------
 
 if [[ $EUID -ne 0 ]]; then
-  die "This script must be run as root (e.g. sudo bash install.sh)"
+  log "Not running as root.  Root privileges will be requested via sudo when needed."
 fi
 
-if ! command -v nix >/dev/null 2>&1; then
-  die "'nix' not found. Are you running the NixOS minimal installer?"
-fi
+command -v nix >/dev/null 2>&1 ||
+  die "'nix' not found.  Are you on the NixOS minimal installer?"
+
+command -v sudo >/dev/null 2>&1 ||
+  die "'sudo' not found.  This script uses sudo to preserve the NIX_CONFIG environment variable."
+
+ensure_nix_features
 
 # ---------------------------------------------------------------------------
-# Network check (Wi-Fi)
+# 5. Network check
 # ---------------------------------------------------------------------------
 
 if ! ping -c 1 -W 3 github.com >/dev/null 2>&1; then
-  echo ""
-  echo "═══════════════════════════════════════════════════════════════════════"
-  echo "  No internet connection detected"
-  echo "═══════════════════════════════════════════════════════════════════════"
-  echo ""
-  echo "If you are on Wi-Fi, start the NetworkManager TUI now:"
-  echo ""
-  echo "    nmtui"
-  echo ""
-  echo "Choose 'Activate a connection', select your SSID, and enter the password."
-  echo "Come back here and press Enter to continue."
-  echo ""
+  cat <<'NET'
+═══════════════════════════════════════════════════════════════════════
+  No internet connection detected
+═══════════════════════════════════════════════════════════════════════
+
+If you are on Wi-Fi, start the NetworkManager TUI now:
+
+    nmtui
+
+Choose 'Activate a connection', select your SSID, and enter the password.
+Come back here and press Enter to continue.
+NET
   read -rp "Press Enter once you have a network connection..." </dev/tty
 
   if ! ping -c 1 -W 3 github.com >/dev/null 2>&1; then
@@ -155,102 +183,116 @@ if ! ping -c 1 -W 3 github.com >/dev/null 2>&1; then
   fi
 fi
 
+# ---------------------------------------------------------------------------
+# 6. Ensure git is available
+# ---------------------------------------------------------------------------
+
 if ! command -v git >/dev/null 2>&1; then
-  echo "📦 git not found, installing..."
+  log "git not found, installing via nix-shell..."
   nix-shell -p git --run "echo git ready"
 fi
 
 # ---------------------------------------------------------------------------
-# Clone repo (if not already inside it)
+# 7. Clone / locate the repo
 # ---------------------------------------------------------------------------
 
+REPO_URL="https://github.com/dehuszar/nixos-config.git"
+FLAKE_ATTR="hostname"
+DISK_NAME="main"
+
 if [[ -f flake.nix ]]; then
-  REPO_DIR="$(pwd)"
-  echo "✅  Using current directory: $REPO_DIR"
+  REPO_DIR=$(pwd)
+  log "Using current directory: $REPO_DIR"
 else
   REPO_DIR="/tmp/nixos-config"
-  echo "📥  Cloning repo into $REPO_DIR ..."
+  log "Cloning repo into $REPO_DIR..."
   rm -rf "$REPO_DIR"
   git clone "$REPO_URL" "$REPO_DIR"
   cd "$REPO_DIR"
 fi
 
 # ---------------------------------------------------------------------------
-# Identify target disk
+# 8. Identify target disk
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "═══════════════════════════════════════════════════════════════════════"
-echo "  Available block devices"
-echo "═══════════════════════════════════════════════════════════════════════"
+cat <<'DISK'
+═══════════════════════════════════════════════════════════════════════
+  Available block devices
+═══════════════════════════════════════════════════════════════════════
+DISK
 lsblk -d -o NAME,SIZE,TYPE,MODEL,TRAN || lsblk -d -o NAME,SIZE,TYPE
 
 echo ""
 read -rp "Enter the target disk (e.g. /dev/nvme0n1 or /dev/sda): " DISK_DEVICE </dev/tty
 
-if [[ -z "$DISK_DEVICE" ]]; then
-  die "No disk selected."
-fi
+[[ -n "$DISK_DEVICE" ]] || die "No disk selected."
+[[ -e "$DISK_DEVICE" ]] || die "Device '$DISK_DEVICE' does not exist."
 
-if [[ ! -e "$DISK_DEVICE" ]]; then
-  die "Device '$DISK_DEVICE' does not exist."
-fi
-
-# Detect partitions vs whole disks using lsblk
 DISK_TYPE=$(lsblk -no TYPE "$DISK_DEVICE" 2>/dev/null || echo "unknown")
 if [[ "$DISK_TYPE" == "part" ]]; then
-  warn "You selected a partition ($DISK_DEVICE). disko-install expects a whole disk."
+  warn "You selected a partition ($DISK_DEVICE).  disko-install expects a whole disk."
   confirm "Continue anyway?" || die "Aborted."
 fi
 
 # ---------------------------------------------------------------------------
-# Destruction warning
+# 9. Destruction warning
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "═══════════════════════════════════════════════════════════════════════"
-echo "  ⚠️  DESTRUCTIVE OPERATION WARNING"
-echo "═══════════════════════════════════════════════════════════════════════"
-echo ""
-echo "Target disk : $DISK_DEVICE"
-echo "Action      : repartition, LUKS-encrypt, format, install NixOS"
-echo "Result      : ALL EXISTING DATA ON $DISK_DEVICE WILL BE LOST"
-echo ""
+cat <<WARN
 
-if ! confirm "Type 'y' to DESTROY all data on $DISK_DEVICE and install"; then
+═══════════════════════════════════════════════════════════════════════
+  ⚠️  DESTRUCTIVE OPERATION WARNING
+═══════════════════════════════════════════════════════════════════════
+
+Target disk : $DISK_DEVICE
+Action      : repartition, LUKS-encrypt, format, install NixOS
+Result      : ALL EXISTING DATA ON $DISK_DEVICE WILL BE LOST
+
+WARN
+
+confirm "Type 'y' to DESTROY all data on $DISK_DEVICE and install" ||
   die "Installation aborted by user."
+
+# ---------------------------------------------------------------------------
+# 10. disko-install (or dry-run)
+# ---------------------------------------------------------------------------
+
+if [[ -n "${DRY_RUN:-}" ]]; then
+  log "DRY RUN — would execute:"
+  echo ""
+  echo "  sudo_nix nix run github:nix-community/disko/latest#disko-install -- \\"
+  echo "      --flake '.#${FLAKE_ATTR}' \\"
+  echo "      --disk '${DISK_NAME}' '${DISK_DEVICE}'"
+  echo ""
+  log "Exiting without making any changes."
+  exit 0
 fi
 
-# ---------------------------------------------------------------------------
-# Run disko-install
-# ---------------------------------------------------------------------------
-
-echo ""
-echo "🚀  Starting disko-install on $DISK_DEVICE ..."
-echo "    You will be prompted to set the LUKS encryption password."
-echo "    This same password will be required at every boot."
+log "Starting disko-install on $DISK_DEVICE..."
+warn "You will be prompted to set the LUKS encryption password."
+warn "This same password will be required at every boot."
 echo ""
 
-nix run github:nix-community/disko/latest#disko-install -- \
+sudo_nix nix run github:nix-community/disko/latest#disko-install -- \
   --flake ".#${FLAKE_ATTR}" \
   --disk "${DISK_NAME}" "${DISK_DEVICE}"
 
-echo ""
-echo "✅  Installation complete!"
-echo ""
+log "Installation complete!"
 
 # ---------------------------------------------------------------------------
-# Post-install prompt
+# 11. Post-install
 # ---------------------------------------------------------------------------
 
 if confirm "Reboot now"; then
-  echo "🔄  Rebooting..."
-  reboot
+  log "Rebooting..."
+  sudo_nix reboot
 else
-  echo ""
-  echo "📋  Next steps:"
-  echo "    1. reboot"
-  echo "    2. Log in as 'sam' and run 'passwd' to set your user password"
-  echo "    3. nmcli device wifi connect 'SSID' password 'pw'"
-  echo ""
+  cat <<'POST'
+
+📋  Next steps:
+    1. reboot
+    2. Log in as 'sam' and run 'passwd' to set your user password
+    3. nmcli device wifi connect 'SSID' password 'pw'
+
+POST
 fi
