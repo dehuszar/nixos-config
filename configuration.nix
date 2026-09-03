@@ -27,6 +27,7 @@
 
   environment.systemPackages = with pkgs; [
     git
+    gnumake
     kdePackages.qt5compat
     quickshell
     # sbctl   # uncomment with the Secure Boot block above

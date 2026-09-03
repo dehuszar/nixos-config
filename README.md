@@ -126,85 +126,27 @@ make run-cli
 
 ## Workflow 2 — Bootstrap the real installation
 
-This repo stays portable: the committed `hardware-configuration.nix` is a
-**placeholder** (tmpfs root, only so the flake evaluates anywhere), and the
-real per-machine config is generated on the target and kept **out of git**, so
-no disk layouts / UUIDs are published.
+This repo uses **disko** for declarative disk partitioning. The disk layout
+(EFI partition, LUKS container, ext4 root) is declared in `modules/disko.nix`,
+so no `hardware-configuration.nix` is needed and the repo stays portable.
 
-> **Where you run these steps:** everything in Workflow 2 runs from the
-> **live/minimal installer** — the text-based NixOS ISO's shell — *not* from
-> an already-installed system. Don't install a stock NixOS first and then
-> bootstrap from it; this flow writes the final system directly via
-> `nixos-install`. Once it finishes you `reboot` into the installed OS and
-> follow the "Post-install & pre-bootstrap checklist" on that running system.
+> **Where you run these steps:** from the **NixOS minimal installer** (live
+> ISO), not from an already-installed system.
 
-1. **Get the repo onto the target** (boot the NixOS installer/live medium;
-   git, Nix + flakes are available there):
+See **`INSTALL.md`** for the full installation guide — it is designed to be
+read comfortably from the installer TTY/CLI.  Two ways to run it:
 
-   ```bash
-   git clone <repo-url>
-   cd nixos-config
-   ```
+**Quick (interactive script)** — no `make` required:
+```bash
+curl -L https://raw.githubusercontent.com/sam/nixos-config/main/install.sh | bash
+```
 
-2. **Partition, format, and mount the target disks** so `/mnt` is the mounted
-   root. BOTH `make generate-hardware` and `nixos-install` run against `/mnt`,
-   so it must already point at your real disks. EFI example (adapt devices!):
-
-   ```bash
-   lsblk                        # find your disk, e.g. /dev/nvme0n1
-   # create two partitions: 1) EFI system partition (512M, type ef00)
-   #                        2) Linux root (rest, type 8304 / ext4)
-   sudo mkfs.fat -F 32 -n ESP /dev/nvme0n1p1
-   sudo mkfs.ext4 -L nixos /dev/nvme0n1p2
-
-   sudo mount /dev/nvme0n1p2 /mnt
-   sudo mkdir -p /mnt/boot
-   sudo mount /dev/nvme0n1p1 /mnt/boot
-   ```
-
-3. **Generate the real hardware config — REQUIRED before installing**:
-
-   ```bash
-   make generate-hardware            # ROOT=/mnt (default)
-   ```
-
-   This runs `nixos-generate-config --root /mnt`, writes the result to
-   `./hardware-configuration.nix`, and pins it with `git update-index
-   --skip-worktree` so your disk layout is never committed to this public repo.
-   To reset the placeholder (another machine / reinstall):
-
-   ```bash
-   make restore-placeholder
-   ```
-
-   > **Order matters!** The placeholder root is tmpfs *only so the flake
-   > evaluates*. If you install without running `generate-hardware` first, the
-   > system boots to a non-persistent, in-memory root. Run it before
-   > `nixos-install`. Also confirm `/mnt` really holds your disks: the generated
-   > `hardware-configuration.nix` should list real root/swap, not `tmpfs`.
-
-4. **Confirm the target is EFI** — `configuration.nix` sets `systemd-boot` +
-   `canTouchEfiVariables`. Adjust `boot.loader.*` for BIOS/MBR. Review the
-   generated `hardware-configuration.nix` (root/swap) as needed.
-
-5. **Install**:
-
-   ```bash
-   sudo nixos-install --flake .#hostname
-   ```
-
-   (Builds the full closure and activates into `/mnt`; needs network, can take
-   a while.)
-
-6. **Set your real password** (not stored in this public repo):
-
-   ```bash
-   passwd          # first log in as `sam`, then set a real password
-   ```
-
-7. **Networking is handled globally** via `networking.networkmanager.enable =
-   true` (works on any machine, wired or wireless — see "Networking & wifi"
-   below).
+**Manual** — if you prefer not to pipe a script:
+```bash
+git clone <repo-url>
+cd nixos-config
+# then follow the commands in INSTALL.md
+```
 
 ## Post-install & pre-bootstrap checklist
 
@@ -343,6 +285,8 @@ nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
 | `modules/vm.nix` | VM-only: qemu-vm import, virtio-gpu display, tmpfs root, VM password |
 | `modules/home/mango.nix` | Home Manager mangowm config (settings + bindings) |
 | `modules/home/vm-resize.nix` | VM-only auto-resize watcher (event-driven) |
-| `hardware-configuration.nix` | **Placeholder** real-hardware FS — replace on install |
+| `modules/disko.nix` | Declarative disk layout: GPT + LUKS + ext4 (real hardware) |
 | `bitwig.nix` | Imported home-manager module (packages) |
-| `Makefile` | `build`, `build-vm`, `check`, `run`, `run-cli`, `generate-hardware`, `restore-placeholder` |
+| `Makefile` | `build`, `build-vm`, `check`, `run`, `run-cli` |
+| `install.sh` | Interactive installer for the NixOS minimal ISO |
+| `INSTALL.md` | One-page installation guide for the minimal ISO |

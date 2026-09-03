@@ -16,6 +16,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    disko = {
+      url = "github:nix-community/disko/latest";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -33,6 +38,7 @@
       mangowm,
       quickshell,
       noctalia,
+      disko,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -84,10 +90,14 @@
     {
       nixosConfigurations = {
         # Real hardware (this machine / bootstrap target): no VM workarounds.
-        # Imports the placeholder hardware config (template root filesystem).
+        # Disk layout is declared via disko (modules/disko.nix) so no
+        # hardware-configuration.nix placeholder is needed.
         hostname = mkNixos {
           isVM = false;
-          extraModules = [ ./hardware-configuration.nix ];
+          extraModules = [
+            disko.nixosModules.disko
+            ./modules/disko.nix
+          ];
         };
 
         # Test VM: renders mangowm through virtio-gpu/virgl in a QEMU window.

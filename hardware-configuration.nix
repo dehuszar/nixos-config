@@ -6,18 +6,16 @@
 }:
 {
   # =========================================================================
-  # PLACEHOLDER hardware configuration for the `hostname` (real hardware)
-  # NixOS configuration.
+  # DEPRECATED — this file is no longer imported by the flake.
   #
-  # Replace this whole file with the output of:
-  #     nixos-generate-config --root /mnt
-  # run on the actual target machine. That generator emits the REAL
-  # fileSystems (with device/UUID), swap, CPU/firmware, network interfaces,
-  # and GPU options for your hardware.
+  # The real-hardware disk layout has been replaced with a declarative
+  # disko configuration in modules/disko.nix (LUKS + ext4).  This file is
+  # kept in the repo only as a reference; it will be removed in a future
+  # cleanup.
   #
-  # For now a tmpfs root is used only so this config *evaluates* (NixOS
-  # requires a root fileSystem to be declared). It does not reflect the real
-  # disk layout and is NOT meant to be installed as-is.
+  # If you need to add hardware-specific settings (e.g. extra kernel
+  # modules, CPU microcode, GPU drivers), create a private module in
+  # ../nixos-config-private/ or edit modules/disko.nix.
   # =========================================================================
   fileSystems."/" = {
     device = "none";
