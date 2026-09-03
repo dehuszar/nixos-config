@@ -129,6 +129,7 @@ in
   home.sessionVariables = {
     EDITOR = "nvim";
     SUDO_EDITOR = "nvim";
+    PATH = "$PATH:$HOME/.local/bin";
   };
 
   programs.home-manager.enable = true;
