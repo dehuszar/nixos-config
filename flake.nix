@@ -26,6 +26,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    brother-mfc9970cdw = {
+      url = "github:dehuszar/nixos-brother-mfc9970cdw";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -45,6 +50,7 @@
       noctalia,
       nixvim,
       disko,
+      brother-mfc9970cdw,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -87,6 +93,7 @@
               home-manager.users.sam = ./home.nix;
             }
             mangowm.nixosModules.mango
+            brother-mfc9970cdw.nixosModules.default
             # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
           ]
           ++ privateModules

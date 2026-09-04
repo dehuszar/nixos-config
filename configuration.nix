@@ -38,6 +38,8 @@
   environment.variables.EDITOR = "nvim";
   environment.variables.SUDO_EDITOR = "nvim";
 
+
+
   networking.hostName = "creation-station";
   networking.networkmanager.enable = true;
 
@@ -48,6 +50,16 @@
   ];
 
   programs.steam.enable = true;
+
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+  services.ipp-usb.enable = true;
+  services.printing = {
+    enable = true;
+  };
 
   system.stateVersion = "26.11";
 
