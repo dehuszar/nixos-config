@@ -271,7 +271,56 @@ sudo_nix nix run github:nix-community/disko/latest#disko-install -- \
 log "Installation complete!"
 
 # ---------------------------------------------------------------------------
-# 11. Post-install
+# 11. Set user password
+# ---------------------------------------------------------------------------
+
+# After disko-install the target root is mounted at /mnt.  Prompt the user to
+# set a password for 'sam' before rebooting so they can log in immediately.
+
+# Verify the install root is still mounted (disko-install typically leaves it
+# mounted so the user can inspect things before rebooting).
+if [[ ! -d /mnt/etc ]]; then
+  warn "/mnt does not appear to contain the installed system."
+  warn "You will need to set a user password after reboot:"
+  warn "  1. Log in as root (no password on fresh install)"
+  warn "  2. Run: passwd sam"
+else
+  cat <<'PASSWD'
+
+═══════════════════════════════════════════════════════════════════════
+  Set a login password for user 'sam'
+═══════════════════════════════════════════════════════════════════════
+
+PASSWD
+
+  read -rp "Enter password for user 'sam': " -s SAM_PASSWD </dev/tty
+  echo ""
+  [[ -n "$SAM_PASSWD" ]] || die "Password cannot be empty."
+
+  read -rp "Confirm password for user 'sam': " -s SAM_PASSWD_CONFIRM </dev/tty
+  echo ""
+
+  if [[ "$SAM_PASSWD" != "$SAM_PASSWD_CONFIRM" ]]; then
+    die "Passwords do not match.  Re-run this script and try again."
+  fi
+
+  log "Setting password for user 'sam' on the installed system..."
+
+  # Use chpasswd inside the chroot so we never echo the password.
+  printf 'sam:%s' "$SAM_PASSWD" | sudo_nix nix run nixpkgs#nixos-enter -- \
+    --root /mnt -- \
+    --command "chpasswd"
+
+  # Unset the variable so it doesn't linger in the environment.
+  unset SAM_PASSWD
+  unset SAM_PASSWD_CONFIRM
+
+  log "Password set successfully."
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# 12. Post-install
 # ---------------------------------------------------------------------------
 
 if confirm "Reboot now"; then
@@ -282,8 +331,9 @@ else
 
 📋  Next steps:
     1. reboot
-    2. Log in as 'sam' and run 'passwd' to set your user password
+    2. The nixos-config repo will be cloned to ~/nixos-config automatically
     3. nmcli device wifi connect 'SSID' password 'pw'
+    4. Set up SSH keys for pushing: ssh-keygen && gh auth login
 
 POST
 fi

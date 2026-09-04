@@ -6,7 +6,7 @@
 { pkgs, ... }:
 
 {
-  imports = [ ./modules/desktop.nix ];
+  imports = [ ./modules/desktop.nix ./modules/first-boot.nix ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
