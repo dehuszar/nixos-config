@@ -16,6 +16,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     disko = {
       url = "github:nix-community/disko/latest";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -38,6 +43,7 @@
       mangowm,
       quickshell,
       noctalia,
+      nixvim,
       disko,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
