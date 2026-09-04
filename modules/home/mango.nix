@@ -80,6 +80,28 @@
         # TUI launchers
         "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
         "Super,w,spawn,ghostty -e wiremix" # Audio control (TUI)
+
+        # Workspace / tag switching (Super+1 through Super+9)
+        "Super,1,view,1"
+        "Super,2,view,2"
+        "Super,3,view,3"
+        "Super,4,view,4"
+        "Super,5,view,5"
+        "Super,6,view,6"
+        "Super,7,view,7"
+        "Super,8,view,8"
+        "Super,9,view,9"
+
+        # Move focused window to tag (Super+Shift+1 through Super+Shift+9)
+        "SUPER+SHIFT,1,tagsilent,1"
+        "SUPER+SHIFT,2,tagsilent,2"
+        "SUPER+SHIFT,3,tagsilent,3"
+        "SUPER+SHIFT,4,tagsilent,4"
+        "SUPER+SHIFT,5,tagsilent,5"
+        "SUPER+SHIFT,6,tagsilent,6"
+        "SUPER+SHIFT,7,tagsilent,7"
+        "SUPER+SHIFT,8,tagsilent,8"
+        "SUPER+SHIFT,9,tagsilent,9"
       ];
     };
     # Raw config lines appended verbatim (unsupported/advanced opts)
