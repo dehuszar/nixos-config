@@ -1,7 +1,12 @@
 # modules/home/neovim.nix
 #
-# Neovim configuration powered by nixvim.
-# Replaces the previous LazyVim + lazy.nvim setup.
+# Neovim powered by nixvim + LazyVim as the distribution layer.
+#
+# nixvim manages: nvim binary, LSP/formatter binaries, treesitter grammars,
+#                 plugin installation (via pkgs.vimPlugins).
+# LazyVim manages: plugin configuration, keymaps, defaults, colourscheme.
+#
+# Based on: https://github.com/azuwis/lazyvim-nixvim
 { pkgs, config, lib, inputs, ... }:
 {
   imports = [ inputs.nixvim.homeModules.nixvim ];
@@ -10,220 +15,186 @@
     enable = true;
     defaultEditor = true;
 
-    # Use the same nixpkgs as the rest of the system (suppresses eval warning)
+    # Use the same nixpkgs as the rest of the system
     nixpkgs.source = pkgs.path;
 
-    # Leader key
+    # ── Leader key & base opts (LazyVim overrides most, but these are safe) ──
     globals.mapleader = " ";
 
-    # Vim options — mirror your previous LazyVim defaults
     opts = {
       relativenumber = true;
       number = true;
-      expandtab = true;
-      tabstop = 2;
-      shiftwidth = 2;
-      smartindent = true;
-      wrap = false;
-      swapfile = false;
-      smartcase = true;
-      ignorecase = true;
-      signcolumn = "yes";
-      cursorline = true;
-      updatetime = 300;
-      timeoutlen = 300;
-      splitright = true;
-      splitbelow = true;
-      undofile = true;
     };
 
-    # ── Colourscheme ──────────────────────────────────────────────
-    colorscheme = "everforest";
-    colorschemes.everforest = {
-      enable = true;
-      settings = {
-        background = "soft";
-      };
-    };
+    # ── lazy.nvim (installed by nixvim, configured by LazyVim) ──────────
+    plugins.lazy.enable = true;
 
-    # ── Treesitter ────────────────────────────────────────────────
+    # ── Treesitter (nixvim installs grammars; LazyVim configures the plugin) ──
     plugins.treesitter = {
       enable = true;
       nixvimInjections = true;
     };
 
-    # ── LSP servers ───────────────────────────────────────────────
-    lsp.servers = {
-      # Core language servers for your LazyVim extras
-      lua_ls.enable = true;
-      pyright.enable = true;
-      ts_ls.enable = true;
-      jsonls.enable = true;
-      yamlls.enable = true;
-      taplo.enable = true;              # TOML
-      marksman.enable = true;           # Markdown
-      ansiblels.enable = true;          # Ansible
-      sqls.enable = true;               # SQL
-      terraformls.enable = true;        # Terraform
-      rust_analyzer.enable = true;      # Rust
-      zls.enable = true;                # Zig
-      biome.enable = true;              # Biome (TypeScript/JS)
-    };
+    # ── LazyVim + extras via lazy.nvim spec ─────────────────────────────
+    extraConfigLuaPre = ''
+      require("lazy").setup({
+        spec = {
+          -- LazyVim distribution
+          { "LazyVim/LazyVim", import = "lazyvim.plugins" },
 
-    # ── Formatting via conform.nvim ───────────────────────────────
-    plugins.conform-nvim = {
-      enable = true;
-      settings = {
-        formatters_by_ft = {
-          python = [ "black" ];
-          terraform = [ "terraform_fmt" ];
-          javascript = [ "biome" ];
-          typescript = [ "biome" ];
-          javascriptreact = [ "biome" ];
-          typescriptreact = [ "biome" ];
-          json = [ "biome" ];
-          yaml = [ "prettierd" ];
-          markdown = [ "prettierd" ];
-          html = [ "prettierd" ];
-          css = [ "prettierd" ];
-          nix = [ "nixfmt" ];
-          lua = [ "stylua" ];
-          rust = [ "rustfmt" ];
-          zig = [ "zigfmt" ];
-          sql = [ "sqlfluff" ];
-          ansible = [ "ansible-lint" ];
-          "_" = [ "trim_whitespace" ];
-        };
-        format_on_save = {
-          timeoutMs = 500;
-          lspFormat = "fallback";
-        };
-      };
-    };
+          -- LazyVim extras (your previous lazyvim.json extras)
+          { import = "lazyvim.plugins.extras.coding.mini-surround" },
+          { import = "lazyvim.plugins.extras.editor.neo-tree" },
+          { import = "lazyvim.plugins.extras.formatting.prettier" },
+          { import = "lazyvim.plugins.extras.lang.typescript.biome" },
+          { import = "lazyvim.plugins.extras.lang.ansible" },
+          { import = "lazyvim.plugins.extras.lang.json" },
+          { import = "lazyvim.plugins.extras.lang.markdown" },
+          { import = "lazyvim.plugins.extras.lang.python" },
+          { import = "lazyvim.plugins.extras.lang.rust" },
+          { import = "lazyvim.plugins.extras.lang.sql" },
+          { import = "lazyvim.plugins.extras.lang.terraform" },
+          { import = "lazyvim.plugins.extras.lang.toml" },
+          { import = "lazyvim.plugins.extras.lang.yaml" },
+          { import = "lazyvim.plugins.extras.lang.zig" },
 
-    # ── Plugins (mapping your LazyVim extras + custom plugins) ────
-    plugins = {
-      # Editor / file tree
-      neo-tree.enable = true;
+          -- Your custom plugin overrides
+          -- Colourscheme
+          { "neanias/everforest-nvim" },
+          {
+            "LazyVim/LazyVim",
+            opts = {
+              colorscheme = "everforest",
+              background = "soft",
+            },
+          },
 
-      # Status line
-      lualine.enable = true;
+          -- All theme plugins available for hot-reloading (lazy-loaded)
+          { "ribru17/bamboo.nvim", lazy = true, priority = 1000 },
+          { "catppuccin/nvim", name = "catppuccin", lazy = true, priority = 1000 },
+          { "sainnhe/everforest", lazy = true, priority = 1000 },
+          { "kepano/flexoki-neovim", lazy = true, priority = 1000 },
+          { "ellisonleao/gruvbox.nvim", lazy = true, priority = 1000 },
+          { "rebelot/kanagawa.nvim", lazy = true, priority = 1000 },
+          { "tahayvr/matteblack.nvim", lazy = true, priority = 1000 },
+          { "loctvl842/monokai-pro.nvim", lazy = true, priority = 1000 },
+          { "shaunsingh/nord.nvim", lazy = true, priority = 1000 },
+          { "rose-pine/neovim", name = "rose-pine", lazy = true, priority = 1000 },
+          { "folke/tokyonight.nvim", lazy = true, priority = 1000 },
 
-      # Buffer line
-      bufferline.enable = true;
+          -- datastar.nvim
+          {
+            "WillEhrendreich/datastar.nvim",
+            ft = { "html" },
+            opts = {},
+          },
 
-      # Fuzzy finder (lazyvim used telescope under the hood)
-      telescope.enable = true;
+          -- Snacks: show hidden files in picker
+          {
+            "folke/snacks.nvim",
+            opts = {
+              picker = {
+                hidden = true,
+                sources = {
+                  files = {
+                    hidden = true,
+                  },
+                },
+              },
+            },
+          },
 
-      # Keybindings help
-      which-key.enable = true;
+          -- Snacks: disable animated scrolling
+          {
+            "folke/snacks.nvim",
+            opts = {
+              scroll = {
+                enabled = false,
+              },
+            },
+          },
 
-      # Mini suite — replaces lazyvim.plugins.extras.coding.mini-surround
-      mini = {
-        enable = true;
-      };
+          -- Disable LazyVim news alerts
+          {
+            "LazyVim/LazyVim",
+            opts = {
+              news = {
+                lazyvim = false,
+                neovim = false,
+              },
+            },
+          },
+        },
 
-      # Git
-      gitsigns.enable = true;
+        -- Write lockfile to state dir (nix store is read-only)
+        lockfile = vim.fn.stdpath("state") .. "/lazy-lock.json",
 
-      # Indent guides
-      indent-blankline.enable = true;
+        defaults = {
+          lazy = false,
+          version = false,
+        },
 
-      # Auto-completion
-      cmp = {
-        enable = true;
-        autoEnableSources = true;
-        settings = {
-          mapping = {
-            "<C-Space>" = "cmp.mapping.complete()";
-            "<C-e>" = "cmp.mapping.abort()";
-            "<CR>" = "cmp.mapping.confirm({ select = true })";
-            "<Tab>" = "cmp.mapping(cmp.mapping.select_next_item(), { 'i', 's' })";
-            "<S-Tab>" = "cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 's' })";
-            "<C-f>" = "cmp.mapping.scroll_docs(4)";
-            "<C-b>" = "cmp.mapping.scroll_docs(-4)";
-          };
-        };
-      };
-      luasnip.enable = true;
+        install = {
+          colorscheme = { "tokyonight", "habamax" },
+        },
 
-      # Trouble (diagnostics list)
-      trouble.enable = true;
+        checker = {
+          enabled = true,
+          notify = false,
+        },
 
-      # Flash (enhanced motion)
-      flash.enable = true;
+        performance = {
+          rtp = {
+            disabled_plugins = {
+              "gzip",
+              "tarPlugin",
+              "tohtml",
+              "tutor",
+              "zipPlugin",
+            },
+          },
+        },
+      })
+    '';
 
-      # Dressing (better vim.ui)
-      dressing.enable = true;
+    # ── Transparency autocmd (runs after LazyVim sets colourscheme) ─────
+    extraConfigLuaPost = ''
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        callback = function()
+          local make_transparent = function(name)
+            local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
+            if ok and hl then
+              hl.bg = nil
+              vim.api.nvim_set_hl(0, name, hl)
+            end
+          end
 
-      # Noice (better cmdline/messages)
-      noice.enable = true;
+          local groups = {
+            "Normal", "NormalFloat", "FloatBorder", "Pmenu", "Terminal",
+            "EndOfBuffer", "FoldColumn", "Folded", "SignColumn", "LineNr",
+            "CursorLineNr", "NormalNC", "WhichKeyFloat", "TelescopeBorder",
+            "TelescopeNormal", "TelescopePromptBorder", "TelescopePromptTitle",
+            "NeoTreeNormal", "NeoTreeNormalNC", "NeoTreeVertSplit",
+            "NeoTreeWinSeparator", "NeoTreeEndOfBuffer",
+            "NvimTreeNormal", "NvimTreeVertSplit", "NvimTreeEndOfBuffer",
+            "NotifyINFOBody", "NotifyERRORBody", "NotifyWARNBody",
+            "NotifyTRACEBody", "NotifyDEBUGBody", "NotifyINFOTitle",
+            "NotifyERRORTitle", "NotifyWARNTitle", "NotifyTRACETitle",
+            "NotifyDEBUGTitle", "NotifyINFOBorder", "NotifyERRORBorder",
+            "NotifyWARNBorder", "NotifyTRACEBorder", "NotifyDEBUGBorder",
+          }
 
-      # Notifications
-      notify = {
-        enable = true;
-        settings.backgroundColour = "#00000000";
-      };
+          for _, name in ipairs(groups) do
+            make_transparent(name)
+          end
+        end,
+      })
 
-      # Todo comments
-      todo-comments.enable = true;
+      -- Apply immediately on first load
+      vim.api.nvim_exec_autocmds("ColorScheme", { modeline = false })
+    '';
 
-      # Vim illuminate (highlight word under cursor)
-      illuminate.enable = true;
-
-      # Session persistence (replaces LazyVim's persistence)
-      persistence.enable = true;
-
-      # Spectre (search & replace across project)
-      spectre.enable = true;
-
-      # Commenting
-      comment.enable = true;
-
-      # Treesitter autotag
-      ts-autotag.enable = true;
-
-      # Treesitter context comment string
-      ts-context-commentstring.enable = true;
-
-      # Dashboard
-      dashboard.enable = true;
-
-      # Snacks — configure hidden files + disable animated scrolling
-      snacks = {
-        enable = true;
-        settings = {
-          picker = {
-            sources = {
-              files = {
-                hidden = true;
-              };
-            };
-          };
-          scroll = {
-            enabled = false;
-          };
-        };
-      };
-    };
-
-    # ── Extra plugins not covered by nixvim built-ins ─────────────
-    # TODO: Re-enable once we have the correct commit hash for datastar.nvim.
-    # The fetchFromGitHub call below 404'd — check the repo's actual branch/rev.
-    # extraPlugins = [
-    #   (pkgs.vimUtils.buildVimPlugin {
-    #     pname = "datastar-nvim";
-    #     version = "unstable-2025-08-31";
-    #     src = pkgs.fetchFromGitHub {
-    #       owner = "WillEhrendreich";
-    #       repo = "datastar.nvim";
-    #       rev = "<commit-hash>";  # get from: https://github.com/WillEhrendreich/datastar.nvim/commits/main
-    #       hash = "sha256-...";    # nix will tell you the correct hash on first build
-    #     };
-    #   })
-    # ];
-
-    # ── Extra packages (LSP binaries, formatters, tools) ──────────
+    # ── Extra packages (LSP binaries, formatters, tools) ────────────────
     extraPackages = with pkgs; [
       # LSP
       lua-language-server
@@ -255,83 +226,11 @@
       # Tools
       ripgrep
       fd
+      lazygit
     ];
-
-    # ── Extra Lua config ────────────────────────────────────────────
-    extraConfigLuaPost = ''
-      -- ── Transparency ──────────────────────────────────────────────
-      -- Run on every colourscheme change so highlights stay transparent.
-      local function make_transparent(name)
-        local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
-        if ok and hl then
-          hl.bg = nil
-          vim.api.nvim_set_hl(0, name, hl)
-        end
-      end
-
-      local transparent_groups = {
-        -- Core
-        "Normal",
-        "NormalFloat",
-        "FloatBorder",
-        "Pmenu",
-        "Terminal",
-        "EndOfBuffer",
-        "FoldColumn",
-        "Folded",
-        "SignColumn",
-        "LineNr",
-        "CursorLineNr",
-        "NormalNC",
-        "WhichKeyFloat",
-        "TelescopeBorder",
-        "TelescopeNormal",
-        "TelescopePromptBorder",
-        "TelescopePromptTitle",
-        -- Neo-tree
-        "NeoTreeNormal",
-        "NeoTreeNormalNC",
-        "NeoTreeVertSplit",
-        "NeoTreeWinSeparator",
-        "NeoTreeEndOfBuffer",
-        -- nvim-tree
-        "NvimTreeNormal",
-        "NvimTreeVertSplit",
-        "NvimTreeEndOfBuffer",
-        -- Notify
-        "NotifyINFOBody",
-        "NotifyERRORBody",
-        "NotifyWARNBody",
-        "NotifyTRACEBody",
-        "NotifyDEBUGBody",
-        "NotifyINFOTitle",
-        "NotifyERRORTitle",
-        "NotifyWARNTitle",
-        "NotifyTRACETitle",
-        "NotifyDEBUGTitle",
-        "NotifyINFOBorder",
-        "NotifyERRORBorder",
-        "NotifyWARNBorder",
-        "NotifyTRACEBorder",
-        "NotifyDEBUGBorder",
-      }
-
-      vim.api.nvim_create_autocmd("ColorScheme", {
-        callback = function()
-          for _, name in ipairs(transparent_groups) do
-            make_transparent(name)
-          end
-        end,
-      })
-
-      -- Apply immediately on first load
-      for _, name in ipairs(transparent_groups) do
-        make_transparent(name)
-      end
-    '';
   };
 
-  # Keep gcc and tree-sitter CLI for building native modules
+  # gcc for building native modules, tree-sitter CLI
   home.packages = with pkgs; [
     gcc
     tree-sitter
