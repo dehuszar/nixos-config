@@ -75,7 +75,7 @@
 
         # App launchers
         "Super,Return,spawn,ghostty" # Terminal
-        "Super,b,spawn,firefox" # Web browser
+        "Super,x,spawn,firefox" # Web browser
 
         # TUI launchers
         "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
