@@ -47,6 +47,8 @@
     "flakes"
   ];
 
+  programs.steam.enable = true;
+
   system.stateVersion = "26.11";
 
   users.users.sam = {
