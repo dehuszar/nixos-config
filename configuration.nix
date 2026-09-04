@@ -19,6 +19,7 @@
   # 3D acceleration + firmware. Intel/AMD are both in-kernel DRM drivers + mesa,
   # so one setting covers both; only NVIDIA needs extra driver config.
   # Redistributable firmware covers amdgpu/i915/wifi/bluetooth.
+  hardware.bluetooth.enable = true;
   hardware.graphics.enable = true;
   hardware.enableRedistributableFirmware = true;
 

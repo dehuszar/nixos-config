@@ -3,7 +3,7 @@
 # Home Manager entry point for user `sam`: identity, the shared package set,
 # and misc program config. Desktop (mangowm) and VM concerns live under
 # modules/home/ and are imported below.
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
@@ -146,6 +146,13 @@ in
     shellAliases = shellAliases;
   };
   programs.pi-coding-agent.enable = true;
+
+  # Reload Mango config automatically after home-manager switch
+  home.activation = {
+    reloadMango = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD noctalia msg config-reload 2>/dev/null || true
+    '';
+  };
 
   targets.genericLinux.enable = true;
   targets.genericLinux.gpu.enable = true;

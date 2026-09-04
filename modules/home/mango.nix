@@ -19,6 +19,27 @@
       env = [ ];
       exec-once = "noctalia";
 
+      # Blur and shadows
+      blur=1;
+      blur_layer=0;
+      blur_optimized=1;
+      blur_params_num_passes=2;
+      blur_params_radius=5;
+      blur_params_noise=0.02;
+      blur_params_brightness=0.9;
+      blur_params_contrast=0.9;
+      blur_params_saturation=1.0;
+      layer_animations=0;
+      
+      shadows=1;
+      layer_shadows=0;
+      shadow_only_floating=0;
+      shadows_size=4;
+      shadows_blur=12;
+      shadows_position_x=2;
+      shadows_position_y=2;
+      shadowscolor="0x000000ff";
+
       # Window effects
       border_radius = 6;
       focused_opacity = 1.0;
@@ -31,6 +52,18 @@
       # Repeatable key -> list of comma-separated bindings.
       # Action names mirror mango's bundled default config.
       bind = [
+        # Core binds
+        "SUPER,space,spawn,noctalia msg panel-toggle launcher"
+        "SUPER,s,spawn,noctalia msg panel-toggle control-center"
+        "SUPER,comma,spawn,noctalia msg settings-toggle"
+
+        # Media keys
+        "NONE,XF86AudioRaiseVolume,spawn,noctalia msg volume-up"
+        "NONE,XF86AudioLowerVolume,spawn,noctalia msg volume-down"
+        "NONE,XF86AudioMute,spawn,noctalia msg volume-mute"
+        "NONE,XF86MonBrightnessUp,spawn,noctalia msg brightness-up"
+        "NONE,XF86MonBrightnessDown,spawn,noctalia msg brightness-down"
+
         "Super,r,reload_config"
         "Super,m,quit"
         "Alt,q,killclient,"
