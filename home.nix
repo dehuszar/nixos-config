@@ -126,10 +126,13 @@ in
 
   fonts.fontconfig.enable = true;
 
+  home.sessionPath = [
+    "$HOME/.local/bin"
+  ];
+
   home.sessionVariables = {
     EDITOR = "nvim";
     SUDO_EDITOR = "nvim";
-    PATH = "$PATH:$HOME/.local/bin";
   };
 
   programs.home-manager.enable = true;
@@ -140,8 +143,6 @@ in
       "ignoredups"
       "ignorespace"
     ];
-    #  FIXME :: need to create a bashrc template and populate it.
-    # initExtra = builtins.readFile ./bashrc;
     shellAliases = shellAliases;
   };
   programs.pi-coding-agent.enable = true;

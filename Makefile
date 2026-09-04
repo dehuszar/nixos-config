@@ -1,5 +1,7 @@
 build:
 	nix build .#nixosConfigurations.hostname.config.system.build.toplevel
+switch:
+	sudo nixos-rebuild switch --flake .#hostname
 build-vm:
 	nix build .#nixosConfigurations.vm.config.system.build.vm
 check:
