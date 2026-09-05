@@ -58,6 +58,7 @@
         "SUPER,space,spawn,noctalia msg panel-toggle launcher"
         "Super+SHIFT,f,togglefullscreen,"
         "Super,g,toggleglobal"
+        "SUPER,k,spawn,noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet"
         "Super,q,killclient,"
         "Super,r,reload_config"
         "Super,Return,spawn,ghostty" # Terminal
