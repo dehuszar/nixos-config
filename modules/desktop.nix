@@ -43,6 +43,7 @@
     noto-fonts
     pipewire
     pipewire-control-center
+    pywalfox-native
     qt6.qt3d
     qt6.qtbase
     tuigreet
