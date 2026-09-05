@@ -118,6 +118,7 @@ in
     proton-vpn-cli
     protonmail-desktop
     rclone
+    simple-scan
     # steam
     thorium-reader
     wiremix

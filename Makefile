@@ -1,11 +1,11 @@
 build:
-	nix build .#nixosConfigurations.hostname.config.system.build.toplevel
+	nix build --impure .#nixosConfigurations.hostname.config.system.build.toplevel
 switch:
-	sudo nixos-rebuild switch --flake .#hostname
+	sudo nixos-rebuild switch --impure --flake .#hostname
 build-vm:
-	nix build .#nixosConfigurations.vm.config.system.build.vm
+	nix build --impure .#nixosConfigurations.vm.config.system.build.vm
 check:
-	nix flake check
+	nix flake check --impure
 
 # --- Installation helpers ---------------------------------------------------
 #

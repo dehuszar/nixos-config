@@ -57,18 +57,12 @@
     let
       inherit (nixpkgs) lib;
 
-      # Check for private modules directory in sibling repo
-      privateDir = ../nixos-config-private;
-      hasPrivate = builtins.pathExists privateDir;
-      
-      # Auto-load private modules if they exist
-      privateModules = if hasPrivate then
-        let
-          files = builtins.attrNames (builtins.readDir privateDir);
-          nixFiles = builtins.filter (f: lib.hasSuffix ".nix" f && f != "default.nix") files;
-        in
-          map (f: privateDir + "/${f}") nixFiles
-      else [];
+      # Private modules — loaded from sibling repo. Each .nix file
+      # (except default.nix) is imported directly.
+      privateModules = [
+        /home/sam/nixos-config-private/brother-printer.nix
+        /home/sam/nixos-config-private/proton-pass.nix
+      ];
       
       # Shared module list for every machine. `isVM` is injected via
       # specialArgs so each config can flip VM-only workarounds.
