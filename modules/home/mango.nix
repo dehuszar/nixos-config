@@ -20,6 +20,7 @@
       # If virgl is ever unavailable, temporarily re-add those vars.
       env = [ ];
       exec-once = "noctalia";
+      source = "~/.config/mango/noctalia.conf";
 
       # Blur and shadows
       blur=1;
