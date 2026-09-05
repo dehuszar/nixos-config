@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788569339,
-        "narHash": "sha256-3SDXJBe8WUhXhu6wb/iIQlu322HnUm2VAEih+/+pYjA=",
+        "lastModified": 1788610412,
+        "narHash": "sha256-ROScuvlIGegwn79bLm/rTwm1wjapk9ryDQNpDJ/qj0Q=",
         "owner": "dehuszar",
         "repo": "nixos-brother-mfc9970cdw",
-        "rev": "312d9d685cd82fad1fb0bb23dc64cc3c7290856d",
+        "rev": "627faf57a83bd94c9ba7eead2457d19faa5caf0a",
         "type": "github"
       },
       "original": {

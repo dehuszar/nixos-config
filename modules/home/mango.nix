@@ -53,33 +53,15 @@
       # Action names mirror mango's bundled default config.
       bind = [
         # Core binds
-        "SUPER,space,spawn,noctalia msg panel-toggle launcher"
-        "SUPER,s,spawn,noctalia msg panel-toggle control-center"
         "SUPER,comma,spawn,noctalia msg settings-toggle"
-
-        # Media keys
-        "NONE,XF86AudioRaiseVolume,spawn,noctalia msg volume-up"
-        "NONE,XF86AudioLowerVolume,spawn,noctalia msg volume-down"
-        "NONE,XF86AudioMute,spawn,noctalia msg volume-mute"
-        "NONE,XF86MonBrightnessUp,spawn,noctalia msg brightness-up"
-        "NONE,XF86MonBrightnessDown,spawn,noctalia msg brightness-down"
-
+        "SUPER,s,spawn,noctalia msg panel-toggle control-center"
+        "SUPER,space,spawn,noctalia msg panel-toggle launcher"
+        "Super+SHIFT,f,togglefullscreen,"
+        "Super,g,toggleglobal"
+        "Super,q,killclient,"
         "Super,r,reload_config"
-        "Super,m,quit"
-        "Alt,q,killclient,"
-        "Alt,f,togglefullscreen,"
-        "Alt,Left,focusdir,left"
-        "Alt,Right,focusdir,right"
-        "Alt,Up,focusdir,up"
-        "Alt,Down,focusdir,down"
-
-        # App launchers
         "Super,Return,spawn,ghostty" # Terminal
-        "Super,x,spawn,firefox" # Web browser
-
-        # TUI launchers
-        "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
-        "Super,w,spawn,ghostty -e wiremix" # Audio control (TUI)
+        "Super,b,spawn,firefox" # Web browser
 
         # Workspace / tag switching (Super+1 through Super+9)
         "Super,1,view,1"
@@ -92,6 +74,21 @@
         "Super,8,view,8"
         "Super,9,view,9"
 
+        # Focus and Movement
+        "Alt,Tab,focuslast"
+        "Super,Down,focusdir,down"
+        "Super,Left,focusdir,left"
+        "Super,Right,focusdir,right"
+        "Super,Up,focusdir,up"
+        "Super+SHIFT,Down,focus_window_or_workspace,down"
+        "Super+SHIFT,Left,focus_window_or_workspace,left"
+        "Super+SHIFT,Right,focus_window_or_workspace,right"
+        "Super+SHIFT,Up,focus_window_or_workspace,up"
+
+        # Layouts
+        "Super,F1,setlayout,scroller"
+        "Super,F1,setlayout,tile"
+
         # Move focused window to tag (Super+Shift+1 through Super+Shift+9)
         "SUPER+SHIFT,1,tagsilent,1"
         "SUPER+SHIFT,2,tagsilent,2"
@@ -102,6 +99,21 @@
         "SUPER+SHIFT,7,tagsilent,7"
         "SUPER+SHIFT,8,tagsilent,8"
         "SUPER+SHIFT,9,tagsilent,9"
+
+        # Media keys
+        "NONE,XF86AudioRaiseVolume,spawn,noctalia msg volume-up"
+        "NONE,XF86AudioLowerVolume,spawn,noctalia msg volume-down"
+        "NONE,XF86AudioMute,spawn,noctalia msg volume-mute"
+        "NONE,XF86MonBrightnessUp,spawn,noctalia msg brightness-up"
+        "NONE,XF86MonBrightnessDown,spawn,noctalia msg brightness-down"
+
+
+        # App launchers
+
+        # TUI launchers
+        "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
+        "Super,f,spawn,ghostty -e yazi" # File Browser (TUI)
+        "Super,w,spawn,ghostty -e wiremix" # Audio control (TUI)
       ];
     };
     # Raw config lines appended verbatim (unsupported/advanced opts)
