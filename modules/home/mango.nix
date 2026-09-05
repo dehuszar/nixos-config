@@ -8,6 +8,8 @@
 
   wayland.windowManager.mango = {
     enable = true;
+    # Raw config lines appended verbatim (unsupported/advanced opts)
+    extraConfig = "";
     settings = {
       # Renderer env. With the VM now exposing a real accelerated GPU via
       # virtio-gpu/virgl (see modules/vm.nix), mangowm should use hardware GL
@@ -47,22 +49,22 @@
 
       # fx post-processing (animations) is left off to keep the VM's
       # render/blit path simple (works under virgl and llvmpipe alike).
-      animations = 0;
+      animations = 1;
 
       # Repeatable key -> list of comma-separated bindings.
       # Action names mirror mango's bundled default config.
       bind = [
-        # Core binds
-        "SUPER,comma,spawn,noctalia msg settings-toggle"
+        # System
+        "SUPER,comma,spawn,noctalia msg settings-toggle" # "Noctalia Settings"
         "SUPER,s,spawn,noctalia msg panel-toggle control-center"
         "SUPER,space,spawn,noctalia msg panel-toggle launcher"
         "Super+SHIFT,f,togglefullscreen,"
         "Super,g,toggleglobal"
         "SUPER,k,spawn,noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet"
         "Super,q,killclient,"
-        "Super,r,reload_config"
-        "Super,Return,spawn,ghostty" # Terminal
-        "Super,b,spawn,firefox" # Web browser
+        "Super+SHIFT,r,reload_config"
+        "Super,Return,spawn,ghostty" #"Terminal"
+        "Super,b,spawn,firefox" #"Web browser"
 
         # Workspace / tag switching (Super+1 through Super+9)
         "Super,1,view,1"
@@ -87,19 +89,31 @@
         "Super+SHIFT,Up,focus_window_or_workspace,up"
 
         # Layouts
-        "Super,F1,setlayout,scroller"
+        "Super,F2,setlayout,scroller"
         "Super,F1,setlayout,tile"
 
         # Move focused window to tag (Super+Shift+1 through Super+Shift+9)
-        "SUPER+SHIFT,1,tagsilent,1"
-        "SUPER+SHIFT,2,tagsilent,2"
-        "SUPER+SHIFT,3,tagsilent,3"
-        "SUPER+SHIFT,4,tagsilent,4"
-        "SUPER+SHIFT,5,tagsilent,5"
-        "SUPER+SHIFT,6,tagsilent,6"
-        "SUPER+SHIFT,7,tagsilent,7"
-        "SUPER+SHIFT,8,tagsilent,8"
-        "SUPER+SHIFT,9,tagsilent,9"
+        "SUPER+SHIFT,1,tag,1"
+        "SUPER+SHIFT,2,tag,2"
+        "SUPER+SHIFT,3,tag,3"
+        "SUPER+SHIFT,4,tag,4"
+        "SUPER+SHIFT,5,tag,5"
+        "SUPER+SHIFT,6,tag,6"
+        "SUPER+SHIFT,7,tag,7"
+        "SUPER+SHIFT,8,tag,8"
+        "SUPER+SHIFT,9,tag,9"
+
+        # Move focused window to tag, but preserve current workspace
+        # (Super+Alt+1 through Super+Alt+9)
+        "SUPER+ALT,1,tagsilent,1"
+        "SUPER+ALT,2,tagsilent,2"
+        "SUPER+ALT,3,tagsilent,3"
+        "SUPER+ALT,4,tagsilent,4"
+        "SUPER+ALT,5,tagsilent,5"
+        "SUPER+ALT,6,tagsilent,6"
+        "SUPER+ALT,7,tagsilent,7"
+        "SUPER+ALT,8,tagsilent,8"
+        "SUPER+ALT,9,tagsilent,9"
 
         # Media keys
         "NONE,XF86AudioRaiseVolume,spawn,noctalia msg volume-up"
@@ -114,10 +128,9 @@
         # TUI launchers
         "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
         "Super,f,spawn,ghostty -e yazi" # File Browser (TUI)
-        "Super,w,spawn,ghostty -e wiremix" # Audio control (TUI)
       ];
     };
-    # Raw config lines appended verbatim (unsupported/advanced opts)
-    extraConfig = "";
+    systemd.enable = true;
+    systemd.xdgAutostart = true;
   };
 }

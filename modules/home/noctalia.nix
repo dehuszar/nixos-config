@@ -15,8 +15,20 @@
 
     # Basic configuration - customize as needed
     settings = {
+      bar = {
+        default = {
+          shadow = false;
+          contact_shadow = false;
+        };
+      };
+      dock = { 
+        shadow = false;
+      };
       shell = {
         font = "JetBrainsMono Nerd Font";
+        panel = {
+          shadow = false;
+        };
         settings_show_advanced = true;
       };
 

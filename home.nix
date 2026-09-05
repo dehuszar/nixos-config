@@ -78,7 +78,6 @@ in
   home.packages = with pkgs; [
     blender
     bluetui
-    btop
     cura-appimage
     dbeaver-bin
     docker-sbx
@@ -89,25 +88,6 @@ in
     impala
     inkscape
     libation
-    nixos-artwork.wallpapers.recursive
-    nixos-artwork.wallpapers.gear
-    nixos-artwork.wallpapers.waterfall
-    nixos-artwork.wallpapers.nineish
-    nixos-artwork.wallpapers.stripes
-    nixos-artwork.wallpapers.dracula
-    nixos-artwork.wallpapers.moonscape
-    nixos-artwork.wallpapers.simple-red
-    nixos-artwork.wallpapers.binary-red
-    nixos-artwork.wallpapers.simple-blue
-    nixos-artwork.wallpapers.binary-blue
-    nixos-artwork.wallpapers.mosaic-blue
-    nixos-artwork.wallpapers.watersplash
-    nixos-artwork.wallpapers.stripes-logo
-    nixos-artwork.wallpapers.binary-white
-    nixos-artwork.wallpapers.binary-black
-    nixos-artwork.wallpapers.nineish-solarized-dark
-    nixos-artwork.wallpapers.nineish-solarized-light
-    noto-fonts
     obsidian
     openscad
     orca-slicer
@@ -119,10 +99,7 @@ in
     protonmail-desktop
     rclone
     simple-scan
-    # steam
     thorium-reader
-    wiremix
-    yazi
   ];
 
   fonts.fontconfig.enable = true;

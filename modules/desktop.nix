@@ -34,10 +34,24 @@
 
   services.upower.enable = true;
 
-  environment.systemPackages = [
-    pkgs.greetd
-    pkgs.qt6.qtbase
-    pkgs.qt6.qt3d
-    pkgs.tuigreet
+  environment.systemPackages = with pkgs; [
+    btop
+    cliphist
+    ddcutil
+    greetd
+    mpvpaper
+    noto-fonts
+    pipewire
+    pipewire-control-center
+    qt6.qt3d
+    qt6.qtbase
+    tuigreet
+    wiremix
+    wl-clip-persist
+    wl-clipboard
+    xdg-desktop-portal
+    xdg-desktop-portal-gtk
+    xdg-desktop-portal-wlr
+    yazi
   ];
 }
