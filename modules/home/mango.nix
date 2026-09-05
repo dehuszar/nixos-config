@@ -2,7 +2,31 @@
 #
 # Home Manager side of mangowm: writes ~/.config/mango/config.conf from the
 # structured `settings` below.
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
+
+let
+  # Scratchpad dev script: launches ghostty with 3 environments for pi work.
+  # Ghostty has no CLI tab support, so these open as separate windows in the
+  # same ghostty instance (shared --class). You can tab them together manually.
+  piSbxDevScript = pkgs.writeShellScript "pi-sbx-dev" ''
+    # Tab 1: pi sandbox shell
+    ghostty --class=pi-sbx-dev --title="pi-sbx-dev" \
+      --working-directory=/home/sam/nixos-config \
+      -e pi-sbx.sh nixos-config &
+
+    # Wait for the first ghostty instance to initialize IPC
+    sleep 0.5
+
+    # Tab 2: neovim in nixos-config
+    ghostty +new-window --class=pi-sbx-dev \
+      --working-directory=/home/sam/nixos-config \
+      -e nvim &
+
+    # Tab 3: plain shell in nixos-config
+    ghostty +new-window --class=pi-sbx-dev \
+      --working-directory=/home/sam/nixos-config &
+  '';
+in
 {
   imports = [ inputs.mangowm.hmModules.mango ];
 
@@ -129,6 +153,9 @@
         # TUI launchers
         "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
         "Super,f,spawn,ghostty -e yazi" # File Browser (TUI)
+
+        # Dev scratchpad: pi sandbox + nvim + shell in ghostty
+        "SUPER,z,toggle_named_scratchpad,pi-sbx-dev,pi-sbx-dev,${piSbxDevScript}"
       ];
     };
     systemd.enable = true;
