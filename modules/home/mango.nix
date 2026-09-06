@@ -5,26 +5,45 @@
 { inputs, pkgs, ... }:
 
 let
-  # Scratchpad dev script: launches ghostty with 3 environments for pi work.
-  # Ghostty has no CLI tab support, so these open as separate windows in the
-  # same ghostty instance (shared --class). You can tab them together manually.
-  piSbxDevScript = pkgs.writeShellScript "pi-sbx-dev" ''
-    # Tab 1: pi sandbox shell
-    ghostty --class=pi-sbx-dev --title="pi-sbx-dev" \
-      --working-directory=/home/sam/nixos-config \
-      -e pi-sbx.sh nixos-config &
+  # Spawn script: opens three separate ghostty windows (nvim, pi-sbx,
+  # shell) and switches to workspace 9 to show them.
+  nixosConfigScript = pkgs.writeShellScript "nixos-config" ''
+    all_running=true
 
-    # Wait for the first ghostty instance to initialize IPC
-    sleep 0.5
+    # Guard: only spawn windows that aren't already running
+    if ! pgrep -f "ghostty.*--class=nixos-config-nvim" >/dev/null 2>&1; then
+      all_running=false
+      ghostty --class=nixos-config-nvim --title="nvim" \
+        --working-directory=/home/sam/nixos-config \
+        -e nvim &
+    fi
 
-    # Tab 2: neovim in nixos-config
-    ghostty +new-window --class=pi-sbx-dev \
-      --working-directory=/home/sam/nixos-config \
-      -e nvim &
+    if ! pgrep -f "ghostty.*--class=nixos-config-sbx" >/dev/null 2>&1; then
+      all_running=false
+      ghostty --class=nixos-config-sbx --title="pi-sbx" \
+        --working-directory=/home/sam/nixos-config \
+        -e bash -c "pi-sbx.sh nixos-config" &
+    fi
 
-    # Tab 3: plain shell in nixos-config
-    ghostty +new-window --class=pi-sbx-dev \
-      --working-directory=/home/sam/nixos-config &
+    if ! pgrep -f "ghostty.*--class=nixos-config-shell" >/dev/null 2>&1; then
+      all_running=false
+      ghostty --class=nixos-config-shell --title="shell" \
+        --working-directory=/home/sam/nixos-config \
+        -e bash &
+    fi
+
+    if [ "$all_running" = true ]; then
+      # All three already running — just give mango a moment to settle
+      sleep 0.2
+    else
+      # Wait for newly spawned windows to appear
+      wait
+      sleep 0.5
+    fi
+
+    # Switch to workspace 9 via mango's IPC (view takes a bitmask;
+    # tag 9 = 1 << 8 = 256)
+    mmsg dispatch view,256 2>/dev/null || true
   '';
 in
 {
@@ -75,6 +94,13 @@ in
       # fx post-processing (animations) is left off to keep the VM's
       # render/blit path simple (works under virgl and llvmpipe alike).
       animations = 1;
+
+      # Window rules
+      windowrule = [
+        "tags:9,title:^nvim$"
+        "tags:9,title:^pi-sbx$"
+        "tags:9,title:^shell$"
+      ];
 
       # Repeatable key -> list of comma-separated bindings.
       # Action names mirror mango's bundled default config.
@@ -154,8 +180,8 @@ in
         "Super,n,spawn,ghostty -e nvim" # Nvim code editor (TUI)
         "Super,f,spawn,ghostty -e yazi" # File Browser (TUI)
 
-        # Dev scratchpad: pi sandbox + nvim + shell in ghostty
-        "SUPER,z,toggle_named_scratchpad,pi-sbx-dev,pi-sbx-dev,${piSbxDevScript}"
+        # Dev workspace: nvim + pi-sbx + shell on workspace 9
+        "SUPER,z,spawn,${nixosConfigScript}"
       ];
     };
     systemd.enable = true;
