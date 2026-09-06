@@ -3,9 +3,24 @@
 # Home Manager configuration for Noctalia shell.
 # Provides a sleek, customizable desktop shell for Wayland compositors.
 # Replaces quickshell as the shell layer around MangoWM.
-{ inputs, ... }:
+{ inputs, config, lib, ... }:
 {
   imports = [ inputs.noctalia.homeModules.default ];
+
+  # -- Obsidian theme template --
+  # Declaratively manage the Obsidian template input file and config.
+  # Noctalia's template engine renders obsidian.css into the vault's
+  # snippets directory, mapping the active palette to Obsidian CSS vars.
+  xdg.configFile = {
+    "noctalia/Obsidian/obsidian.css".source = ./obsidian/obsidian.css;
+    "noctalia/obsidian.toml".source = ./obsidian/obsidian.toml;
+  };
+
+  # Ensure the vault snippets directory exists so Noctalia can write to it.
+  home.activation.createObsidianSnippetsDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD mkdir -p "/home/sam/Documents/Thoughts and Designs/.obsidian/snippets"
+    $DRY_RUN_CMD touch "/home/sam/Documents/Thoughts and Designs/.obsidian/snippets/noctalia.css"
+  '';
 
   programs.noctalia = {
     enable = true;
