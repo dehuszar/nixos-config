@@ -236,8 +236,9 @@ in
             status = "enable";
             position = "0,0";
             mode = "3840x2160@60Hz";
+            scale = 1.2;
           }
-          { criteria = "eDP-1"; status = "enable"; position = "3840,960"; }
+          { criteria = "eDP-1"; status = "enable"; position = "3200,757"; scale = 1.15; }
           { criteria = "DP-3"; status = "disable"; }
         ];
       }
@@ -250,8 +251,9 @@ in
             status = "enable";
             position = "0,0";
             mode = "3840x2160@60Hz";
+            scale = 1.2;
           }
-          { criteria = "eDP-1"; status = "enable"; position = "3840,960"; }
+          { criteria = "eDP-1"; status = "enable"; position = "3200,757"; scale = 1.15; }
         ];
       }
       # Laptop only (no external display connected)
