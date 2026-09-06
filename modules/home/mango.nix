@@ -172,6 +172,12 @@ in
         "Super+ALT,Right,exchange_client,right"
         "Super+ALT,Up,exchange_client,up"
 
+        # Move focused window to adjacent monitor (keep same tag)
+        "Super+CTRL,Down,tagmon,down,1"
+        "Super+CTRL,Left,tagmon,left,1"
+        "Super+CTRL,Right,tagmon,right,1"
+        "Super+CTRL,Up,tagmon,up,1"
+
         # Resize mode (enters a submap for keyboard resizing)
         "Super+CTRL,r,setkeymode,resize"
 
