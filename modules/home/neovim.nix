@@ -44,8 +44,8 @@
 
           -- The following configs are needed for fixing lazyvim on nix
           -- disable mason.nvim, use config.extraPackages
-          { "williamboman/mason-lspconfig.nvim", enabled = false },
-          { "williamboman/mason.nvim", enabled = false },
+          { "mason-org/mason-lspconfig.nvim", enabled = false },
+          { "mason-org/mason.nvim", enabled = false },
 
           -- LazyVim extras (your previous lazyvim.json extras)
           { import = "lazyvim.plugins.extras.coding.mini-surround" },
@@ -107,13 +107,18 @@
                   },
                 },
               },
-            },
-          },
-
-          -- Snacks: disable animated scrolling
-          {
-            "folke/snacks.nvim",
-            opts = {
+              dashboard = {
+                preset = {
+                  keys = {
+                    {
+                      icon = " ",
+                      key = "p",
+                      desc = "Projects",
+                      action = ":lua Snacks.picker.projects()",
+                    },
+                  },
+                },
+              },
               scroll = {
                 enabled = false,
               },
