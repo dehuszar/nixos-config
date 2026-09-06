@@ -213,4 +213,98 @@ in
     systemd.enable = true;
     systemd.xdgAutostart = true;
   };
+
+  # kanshi: dynamic output management
+  #
+  # Profiles are matched top-to-bottom; first match wins. Matching is based on
+  # which outputs are physically connected (not which are enabled/disabled).
+  # Outputs with `status = "disable"` do not block matching — they simply
+  # disable that output if it happens to be present.
+  services.kanshi = {
+    enable = true;
+    settings = [
+      # Laptop + HDMI (DP-3 disabled to avoid duplicate of same physical monitor)
+      {
+        profile.name = "docked";
+        profile.outputs = [
+          {
+            criteria = "HDMI-A-1";
+            status = "enable";
+            position = "0,0";
+            mode = "3840x2160@60Hz";
+          }
+          { criteria = "eDP-1"; status = "enable"; position = "3840,960"; }
+          { criteria = "DP-3"; status = "disable"; }
+        ];
+      }
+      # Laptop + USB-C DP alt mode (HDMI not plugged in — fallback)
+      {
+        profile.name = "dp-fallback";
+        profile.outputs = [
+          {
+            criteria = "DP-3";
+            status = "enable";
+            position = "0,0";
+            mode = "3840x2160@60Hz";
+          }
+          { criteria = "eDP-1"; status = "enable"; position = "3840,960"; }
+        ];
+      }
+      # Laptop only (no external display connected)
+      {
+        profile.name = "laptop-only";
+        profile.outputs = [
+          { criteria = "eDP-1"; status = "enable"; position = "0,0"; }
+        ];
+      }
+    ];
+  };
+
+  # Lid-close monitor: disables eDP-1 when the laptop lid is shut so that
+  # mangowm moves all windows to the remaining external monitor.
+  # Re-enables eDP-1 when the lid opens.
+  home.file.".local/bin/mango-lid-monitor" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      # Monitors the ACPI lid switch and toggles eDP-1 via mmsg.
+      # Runs as a systemd user service alongside mangowm.
+
+      LID_STATE="/proc/acpi/button/lid/LID/state"
+      CURRENT_STATE=""
+
+      while true; do
+        if [ -f "$LID_STATE" ]; then
+          STATE=$(awk '{print $2}' "$LID_STATE" 2>/dev/null)
+          if [ -n "$STATE" ] && [ "$STATE" != "$CURRENT_STATE" ]; then
+            CURRENT_STATE="$STATE"
+            if [ "$STATE" = "closed" ]; then
+              # Lid closed — disable the internal display
+              mmsg dispatch disable_monitor,eDP-1 2>/dev/null || true
+            else
+              # Lid open — re-enable the internal display
+              mmsg dispatch enable_monitor,eDP-1 2>/dev/null || true
+            fi
+          fi
+        fi
+        sleep 1
+      done
+    '';
+  };
+
+  systemd.user.services.mango-lid-monitor = {
+    Unit = {
+      Description = "Toggle eDP-1 on laptop lid close/open for mangowm";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "%h/.local/bin/mango-lid-monitor";
+      Restart = "always";
+      RestartSec = 2;
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
 }
