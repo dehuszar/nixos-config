@@ -264,6 +264,75 @@ in
     ];
   };
 
+  # Dock inhibitor: holds a systemd sleep-inhibit lock while an external monitor
+  # (HDMI-A-1 or DP-3) is connected.  This prevents the machine from suspending
+  # when the lid is closed while docked; the lid monitor still handles toggling
+  # eDP-1 on/off.  Undocked, lid-close suspends as normal.
+  home.file.".local/bin/mango-dock-inhibit" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      # Polls DRM connector status.  While any external display is "connected",
+      # holds a systemd sleep inhibitor so lid-close does not suspend.
+
+      HDMI_STATUS="/sys/class/drm/card1-HDMI-A-1/status"
+      DP_STATUS="/sys/class/drm/card1-DP-3/status"
+
+      INHIBIT_PID=""
+
+      has_external() {
+        [ -f "$HDMI_STATUS" ] && [ "$(cat "$HDMI_STATUS" 2>/dev/null)" = "connected" ] && return 0
+        [ -f "$DP_STATUS" ]     && [ "$(cat "$DP_STATUS" 2>/dev/null)"     = "connected" ] && return 0
+        return 1
+      }
+
+      start_inhibit() {
+        if [ -z "$INHIBIT_PID" ]; then
+          systemd-inhibit \
+            --what=sleep \
+            --who="mango-dock-inhibit" \
+            --why="External monitor connected; suspending would disconnect display" \
+            --mode=block \
+            sleep infinity &
+          INHIBIT_PID=$!
+        fi
+      }
+
+      stop_inhibit() {
+        if [ -n "$INHIBIT_PID" ]; then
+          kill "$INHIBIT_PID" 2>/dev/null || true
+          wait "$INHIBIT_PID" 2>/dev/null || true
+          INHIBIT_PID=""
+        fi
+      }
+
+      while true; do
+        if has_external; then
+          start_inhibit
+        else
+          stop_inhibit
+        fi
+        sleep 3
+      done
+    '';
+  };
+
+  systemd.user.services.mango-dock-inhibit = {
+    Unit = {
+      Description = "Inhibit suspend while external monitor is connected";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "%h/.local/bin/mango-dock-inhibit";
+      Restart = "always";
+      RestartSec = 2;
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
+
   # Lid-close monitor: disables eDP-1 when the laptop lid is shut so that
   # mangowm moves all windows to the remaining external monitor.
   # Re-enables eDP-1 when the lid opens.
