@@ -166,6 +166,15 @@ in
         "SUPER+ALT,8,tagsilent,8"
         "SUPER+ALT,9,tagsilent,9"
 
+        # Swap/reorder windows
+        "Super+ALT,Down,exchange_client,down"
+        "Super+ALT,Left,exchange_client,left"
+        "Super+ALT,Right,exchange_client,right"
+        "Super+ALT,Up,exchange_client,up"
+
+        # Resize mode (enters a submap for keyboard resizing)
+        "Super+CTRL,r,setkeymode,resize"
+
         # Media keys
         "NONE,XF86AudioRaiseVolume,spawn,noctalia msg volume-up"
         "NONE,XF86AudioLowerVolume,spawn,noctalia msg volume-down"
@@ -183,6 +192,17 @@ in
         # Dev workspace: nvim + pi-sbx + shell on workspace 9
         "SUPER,z,spawn,${nixosConfigScript}"
       ];
+      keymode = {
+        resize = {
+          bind = [
+            "NONE,Left,resizewin,-10,0"
+            "NONE,Right,resizewin,+10,0"
+            "NONE,Up,resizewin,0,-10"
+            "NONE,Down,resizewin,0,+10"
+            "NONE,Escape,setkeymode,default"
+          ];
+        };
+      };
     };
     systemd.enable = true;
     systemd.xdgAutostart = true;
