@@ -95,6 +95,10 @@ in
       # render/blit path simple (works under virgl and llvmpipe alike).
       animations = 1;
 
+      # Multi-monitor: allow directional focus (Super+Arrows) to cross
+      # monitor boundaries natively, no script needed.
+      focus_cross_monitor=1;
+
       # Window rules
       windowrule = [
         "tags:9,title:^nvim$"
@@ -117,16 +121,16 @@ in
         "Super,Return,spawn,ghostty" #"Terminal"
         "Super,b,spawn,firefox" #"Web browser"
 
-        # Workspace / tag switching (Super+1 through Super+9)
-        "Super,1,view,1"
-        "Super,2,view,2"
-        "Super,3,view,3"
-        "Super,4,view,4"
-        "Super,5,view,5"
-        "Super,6,view,6"
-        "Super,7,view,7"
-        "Super,8,view,8"
-        "Super,9,view,9"
+        # Workspace / tag switching (Super+1 through Super+9) — synced across all monitors
+        "Super,1,view,1,1"
+        "Super,2,view,2,1"
+        "Super,3,view,3,1"
+        "Super,4,view,4,1"
+        "Super,5,view,5,1"
+        "Super,6,view,6,1"
+        "Super,7,view,7,1"
+        "Super,8,view,8,1"
+        "Super,9,view,9,1"
 
         # Focus and Movement
         "Alt,Tab,focuslast"
