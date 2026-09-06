@@ -42,6 +42,11 @@
           -- LazyVim distribution
           { "LazyVim/LazyVim", import = "lazyvim.plugins" },
 
+          -- The following configs are needed for fixing lazyvim on nix
+          -- disable mason.nvim, use config.extraPackages
+          { "williamboman/mason-lspconfig.nvim", enabled = false },
+          { "williamboman/mason.nvim", enabled = false },
+
           -- LazyVim extras (your previous lazyvim.json extras)
           { import = "lazyvim.plugins.extras.coding.mini-surround" },
           { import = "lazyvim.plugins.extras.editor.neo-tree" },
@@ -195,9 +200,26 @@
       vim.api.nvim_exec_autocmds("ColorScheme", { modeline = false })
     '';
 
+    # ── LSP servers (registers with lspconfig; binaries from extraPackages) ──
+    lsp.servers = {
+      lua_ls.enable = true;
+      pyright.enable = true;
+      ts_ls.enable = true;
+      jsonls.enable = true;
+      yamlls.enable = true;
+      taplo.enable = true;
+      marksman.enable = true;
+      ansiblels.enable = true;
+      sqls.enable = true;
+      terraformls.enable = true;
+      rust_analyzer.enable = true;
+      zls.enable = true;
+      biome.enable = true;
+    };
+
     # ── Extra packages (LSP binaries, formatters, tools) ────────────────
     extraPackages = with pkgs; [
-      # LSP
+      # LSP servers (binaries on PATH for nvim wrapper)
       lua-language-server
       pyright
       typescript-language-server
@@ -205,6 +227,7 @@
       yaml-language-server
       taplo
       marksman
+      markdownlint-cli2
       ansible-language-server
       sqls
       terraform-ls
