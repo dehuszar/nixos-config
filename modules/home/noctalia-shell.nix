@@ -3,7 +3,7 @@
 # Home Manager configuration for Noctalia shell.
 # Provides a sleek, customizable desktop shell for Wayland compositors.
 # Replaces quickshell as the shell layer around MangoWM.
-{ inputs, config, lib, ... }:
+{ inputs, config, lib, pkgs, ... }:
 {
   imports = [ inputs.noctalia.homeModules.default ];
 
@@ -151,4 +151,6 @@
       };
     };
   };
+
+
 }
