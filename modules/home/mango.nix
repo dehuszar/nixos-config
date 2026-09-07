@@ -220,14 +220,16 @@ in
 
   # kanshi: dynamic output management
   #
-  # Profiles are matched top-to-bottom; first match wins. Matching is based on
-  # which outputs are physically connected (not which are enabled/disabled).
-  # Outputs with `status = "disable"` do not block matching — they simply
-  # disable that output if it happens to be present.
+  # Strategy: Manage all connected outputs explicitly to avoid "no profile matched".
+  # When HDMI is active, DP-3 (USB-C video) is disabled to prevent duplicate displays.
+  # 
+  # Note: Both HDMI and DP-3 remain physically connected (same monitor), so both
+  # must be mentioned in profiles. The disable/enable actions may cause brief
+  # hotplug events, but kanshi should stabilize on the correct profile.
   services.kanshi = {
     enable = true;
     settings = [
-      # Laptop + HDMI (DP-3 disabled to avoid duplicate of same physical monitor)
+      # Laptop + HDMI (DP-3 disabled to use HDMI for video, USB-C for power/hub)
       {
         profile.name = "docked";
         profile.outputs = [
@@ -242,9 +244,9 @@ in
           { criteria = "DP-3"; status = "disable"; }
         ];
       }
-      # Laptop + USB-C DP alt mode (HDMI not plugged in — fallback)
+      # Laptop + USB-C DP only (when HDMI is NOT connected)
       {
-        profile.name = "dp-fallback";
+        profile.name = "dp-only";
         profile.outputs = [
           {
             criteria = "DP-3";
@@ -256,7 +258,7 @@ in
           { criteria = "eDP-1"; status = "enable"; position = "3200,757"; scale = 1.15; }
         ];
       }
-      # Laptop only (no external display connected)
+      # Laptop only (no external displays connected)
       {
         profile.name = "laptop-only";
         profile.outputs = [
@@ -264,6 +266,21 @@ in
         ];
       }
     ];
+  };
+
+  # Stabilize kanshi: prevent rapid restarts that cause display toggling
+  systemd.user.services.kanshi = {
+    Unit = {
+      # Limit restart attempts to prevent infinite loops
+      StartLimitIntervalSec = "60";
+      StartLimitBurst = "3";
+    };
+    Service = {
+      # Add delay before restarting to prevent toggle loops
+      RestartSec = "10";
+      # Give kanshi time to stabilize after applying config
+      TimeoutStartSec = "15";
+    };
   };
 
   # Dock inhibitor: holds a systemd sleep-inhibit lock while an external monitor
