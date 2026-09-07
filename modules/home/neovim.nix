@@ -139,6 +139,16 @@
               },
             },
           },
+
+          -- Conform.nvim: configure nixfmt for Nix files
+          {
+            "stevearc/conform.nvim",
+            opts = {
+              formatters_by_ft = {
+                nix = { "nixfmt" },
+              },
+            },
+          },
         },
 
         -- Write lockfile to state dir (nix store is read-only)
@@ -224,6 +234,7 @@
       rust_analyzer.enable = true;
       zls.enable = true;
       biome.enable = true;
+      nil.enable = true;
     };
 
     # ── Extra packages (LSP binaries, formatters, tools) ────────────────
@@ -244,6 +255,10 @@
       zls
       biome
       nil
+
+      # Linters
+      statix
+      deadnix
 
       # Formatters
       stylua
