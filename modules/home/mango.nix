@@ -2,7 +2,7 @@
 #
 # Home Manager side of mangowm: writes ~/.config/mango/config.conf from the
 # structured `settings` below.
-{ inputs, pkgs, ... }:
+{ inputs, pkgs, lib, ... }:
 
 let
   # Spawn script: opens three separate ghostty windows (nvim, pi-sbx,
@@ -62,7 +62,7 @@ in
       # force llvmpipe even when virgl is available, turning the screen black.
       # If virgl is ever unavailable, temporarily re-add those vars.
       env = [ ];
-      exec-once = "noctalia";
+      exec-once = [ "noctalia" "mmsg dispatch disable_monitor,DP-3" ];
       source = "~/.config/mango/noctalia.conf";
 
       # Blur and shadows
@@ -218,90 +218,23 @@ in
     systemd.xdgAutostart = true;
   };
 
-  # kanshi: dynamic output management
-  #
-  # Strategy: Manage all connected outputs explicitly to avoid "no profile matched".
-  # When HDMI is active, DP-3 (USB-C video) is disabled to prevent duplicate displays.
-  # 
-  # Note: Both HDMI and DP-3 remain physically connected (same monitor), so both
-  # must be mentioned in profiles. The disable/enable actions may cause brief
-  # hotplug events, but kanshi should stabilize on the correct profile.
-  services.kanshi = {
-    enable = true;
-    settings = [
-      # Laptop + HDMI (DP-3 disabled to use HDMI for video, USB-C for power/hub)
-      {
-        profile.name = "docked";
-        profile.outputs = [
-          {
-            criteria = "HDMI-A-1";
-            status = "enable";
-            position = "0,0";
-            mode = "3840x2160@60Hz";
-            scale = 1.2;
-          }
-          { criteria = "eDP-1"; status = "enable"; position = "3200,757"; scale = 1.15; }
-          { criteria = "DP-3"; status = "disable"; }
-        ];
-      }
-      # Laptop + USB-C DP only (when HDMI is NOT connected)
-      {
-        profile.name = "dp-only";
-        profile.outputs = [
-          {
-            criteria = "DP-3";
-            status = "enable";
-            position = "0,0";
-            mode = "3840x2160@60Hz";
-            scale = 1.2;
-          }
-          { criteria = "eDP-1"; status = "enable"; position = "3200,757"; scale = 1.15; }
-        ];
-      }
-      # Laptop only (no external displays connected)
-      {
-        profile.name = "laptop-only";
-        profile.outputs = [
-          { criteria = "eDP-1"; status = "enable"; position = "0,0"; }
-        ];
-      }
-    ];
-  };
-
-  # Stabilize kanshi: prevent rapid restarts that cause display toggling
-  systemd.user.services.kanshi = {
-    Unit = {
-      # Limit restart attempts to prevent infinite loops
-      StartLimitIntervalSec = "60";
-      StartLimitBurst = "3";
-    };
-    Service = {
-      # Add delay before restarting to prevent toggle loops
-      RestartSec = "10";
-      # Give kanshi time to stabilize after applying config
-      TimeoutStartSec = "15";
-    };
-  };
-
-  # Dock inhibitor: holds a systemd sleep-inhibit lock while an external monitor
-  # (HDMI-A-1 or DP-3) is connected.  This prevents the machine from suspending
-  # when the lid is closed while docked; the lid monitor still handles toggling
+  # Dock inhibitor: holds a systemd sleep-inhibit lock while HDMI-A-1
+  # is connected.  This prevents the machine from suspending when the
+  # lid is closed while docked; the lid monitor still handles toggling
   # eDP-1 on/off.  Undocked, lid-close suspends as normal.
   home.file.".local/bin/mango-dock-inhibit" = {
     executable = true;
     text = ''
       #!/bin/sh
-      # Polls DRM connector status.  While any external display is "connected",
+      # Polls DRM connector status.  While HDMI-A-1 is "connected",
       # holds a systemd sleep inhibitor so lid-close does not suspend.
 
       HDMI_STATUS="/sys/class/drm/card1-HDMI-A-1/status"
-      DP_STATUS="/sys/class/drm/card1-DP-3/status"
 
       INHIBIT_PID=""
 
       has_external() {
         [ -f "$HDMI_STATUS" ] && [ "$(cat "$HDMI_STATUS" 2>/dev/null)" = "connected" ] && return 0
-        [ -f "$DP_STATUS" ]     && [ "$(cat "$DP_STATUS" 2>/dev/null)"     = "connected" ] && return 0
         return 1
       }
 
