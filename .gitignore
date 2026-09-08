@@ -11,3 +11,6 @@ result-*
 # Ignore NixOS interactive test driver history
 **/.nixos-test-history
 modules/home/quickshell-reference/
+
+# Proprietary binaries (downloaded manually)
+sources/*.tar.xz

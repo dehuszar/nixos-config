@@ -1,11 +1,25 @@
 build:
 	nix build --impure .#nixosConfigurations.hostname.config.system.build.toplevel
 switch:
-	sudo nixos-rebuild switch --impure --flake .#hostname
+	sudo -E HOME=$(HOME) nixos-rebuild switch --impure --flake .#hostname
 build-vm:
 	nix build --impure .#nixosConfigurations.vm.config.system.build.vm
 check:
 	nix flake check --impure
+
+# --- Proprietary sources ---------------------------------------------------
+#
+# Modartt uses expiring session-scoped download URLs, so the tarball must be
+# downloaded manually.  Place it in sources/ then run make sources-prefetch.
+
+sources/pianoteq_setup_v924.tar.xz:
+	@echo "Download pianoteq_setup_v924.tar.xz from modartt.com"
+	@echo "  → https://www.modartt.com/download?file=pianoteq_setup_v924.tar.xz"
+	@echo "and place it in sources/"
+	@exit 1
+
+sources-prefetch: sources/pianoteq_setup_v924.tar.xz
+	nix-prefetch-url file://$$(pwd)/$<
 
 # --- Installation helpers ---------------------------------------------------
 #

@@ -1,10 +1,90 @@
 # recording.nix
 #
-# Bitwig Studio, stem separation (StemDeck), VST bridging, and
+# Bitwig Studio, stem separation (StemDeck), VST bridging, Pianoteq, and
 # related audio-recording tooling.
 { pkgs, config, lib, ... }:
 let
   bottles-overridden = pkgs.bottles.override { removeWarningPopup = true; };
+
+  # --- Pianoteq (proprietary) ---
+  # Downloaded manually (Modartt uses expiring session-scoped URLs).
+  # Run `make sources-prefetch` after placing the tarball in sources/.
+  #
+  # NOTE: This archive only contains the standalone binary.  The VST3/AU
+  # plugins are distributed separately by Modartt and must be added manually
+  # (e.g. into ~/.vst3/) or packaged in a separate derivation.
+  # __impure flag (passed via `make switch`) allows getEnv to read from
+  # the filesystem rather than the flake's git-tracked store copy.
+  pianoteqSrc = builtins.path {
+    path = "${builtins.getEnv "HOME"}/nixos-config/sources/pianoteq_setup_v924.tar.xz";
+    name = "pianoteq-setup-v924";
+  };
+
+  pianoteq = pkgs.stdenv.mkDerivation rec {
+    pname = "pianoteq";
+    version = "9.2.4";
+
+    src = pianoteqSrc;
+
+    # autoPatchelfHook rewrites the ELF interpreter and RPATH so the
+    # proprietary binary can find Nix-provided shared libraries.
+    nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.makeWrapper ];
+    buildInputs = [
+      pkgs.stdenv.cc.cc.lib
+      pkgs.alsa-lib
+      pkgs.libjack2
+      pkgs.freetype
+      pkgs.libGL
+      pkgs.libxcb
+      pkgs.udev
+      pkgs.zlib
+      pkgs.fontconfig
+    ];
+
+    unpackPhase = ''
+      tar xf $src
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      mkdir -p $out/bin $out/share/{doc/pianoteq,applications}
+
+      BASE="Pianoteq 9"
+
+      # Standalone binary — the file itself contains a space in its name.
+      cp "$BASE/x86-64bit/Pianoteq 9" $out/bin/Pianoteq
+      chmod +x $out/bin/Pianoteq
+
+      # Documentation
+      cp -r "$BASE/README_LINUX.txt" "$BASE/Licence.rtf" $out/share/doc/pianoteq/
+      cp -r "$BASE/Documentation" $out/share/doc/pianoteq/
+
+      # Desktop entry
+      cat > $out/share/applications/pianoteq.desktop <<'EOF'
+      [Desktop Entry]
+      Name=Pianoteq
+      GenericName=Virtual Piano
+      Comment=Physical modelling piano by Modartt
+      Exec=Pianoteq
+      Icon=audio-x-generic
+      Terminal=false
+      Type=Application
+      Categories=AudioVideo;Audio;Music;
+      EOF
+
+      runHook postInstall
+    '';
+
+    meta = with lib; {
+      description = "Pianoteq — physical modelling piano (standalone)";
+      homepage = "https://www.modartt.com/pianoteq";
+      license = licenses.unfree;
+      platforms = [ "x86_64-linux" ];
+      sourceProvenance = sourceModels.binary;
+      maintainers = [ ];
+    };
+  };
 
   # --- StemDeck helpers ---
   # Mirrors the upstream "one-shot" workflow (run.sh setup/start/stop/status)
@@ -123,6 +203,7 @@ in
 {
   home.packages = [
     bottles-overridden
+    pianoteq
     pkgs.bitwig-studio
     pkgs.neural-amp-modeler-lv2
     pkgs.yabridge
@@ -135,6 +216,17 @@ in
     genericName = "Stem Separator";
     comment = "Local AI-powered audio stem separation";
     exec = "stemdeck start";
+    icon = "audio-x-generic";
+    terminal = false;
+    categories = [ "AudioVideo" "Audio" "Music" ];
+    type = "Application";
+  };
+
+  xdg.desktopEntries.pianoteq = {
+    name = "Pianoteq";
+    genericName = "Virtual Piano";
+    comment = "Physical modelling piano by Modartt";
+    exec = "Pianoteq";
     icon = "audio-x-generic";
     terminal = false;
     categories = [ "AudioVideo" "Audio" "Music" ];
