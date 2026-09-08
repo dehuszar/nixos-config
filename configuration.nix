@@ -6,7 +6,10 @@
 { pkgs, ... }:
 
 {
-  imports = [ ./modules/desktop.nix ./modules/first-boot.nix ];
+  imports = [
+    ./modules/desktop.nix
+    ./modules/first-boot.nix
+  ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -30,6 +33,9 @@
     git
     gnumake
     kdePackages.qt5compat
+    nss
+    nssTools
+    openssl
     quickshell
     # sbctl   # uncomment with the Secure Boot block above
     wget
@@ -37,8 +43,6 @@
   ];
   environment.variables.EDITOR = "nvim";
   environment.variables.SUDO_EDITOR = "nvim";
-
-
 
   networking.hostName = "creation-station";
   networking.networkmanager.enable = true;
