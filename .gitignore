@@ -15,3 +15,4 @@ modules/home/quickshell-reference/
 # Proprietary binaries (downloaded manually)
 sources/*.tar.xz
 sources/*.zip
+*.ptq
