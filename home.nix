@@ -59,7 +59,7 @@ let
 in
 {
   imports = [
-    ./bitwig.nix
+    ./modules/home/recording.nix
     ./modules/home/mango.nix
     ./modules/home/neovim.nix
     ./modules/home/noctalia-shell.nix
