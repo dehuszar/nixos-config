@@ -2,17 +2,135 @@
 #
 # Bitwig Studio, stem separation (StemDeck), VST bridging, Pianoteq, and
 # related audio-recording tooling.
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 let
   bottles-overridden = pkgs.bottles.override { removeWarningPopup = true; };
+
+  # --- VCV Rack Pro (proprietary) ---
+  # Downloaded manually from vcvrack.com (requires Pro license).
+  # Place the zip in sources/ and run `make switch`.
+  vcvrack-pro-src = builtins.path {
+    path = "${builtins.getEnv "HOME"}/nixos-config/sources/RackPro-2.6.6-lin-x64.zip";
+    name = "RackPro-2.6.6-lin-x64.zip";
+  };
+
+  vcvrack-pro = pkgs.stdenv.mkDerivation rec {
+    pname = "vcvrack-pro";
+    version = "2.6.6";
+
+    src = vcvrack-pro-src;
+
+    nativeBuildInputs = [
+      pkgs.autoPatchelfHook
+      pkgs.makeWrapper
+      pkgs.unzip
+    ];
+    buildInputs = [
+      pkgs.stdenv.cc.cc.lib
+      pkgs.alsa-lib
+      pkgs.libjack2
+      pkgs.pulseaudio
+      pkgs.freetype
+      pkgs.libGL
+      pkgs.fontconfig
+      pkgs.curl
+      pkgs.zlib
+      pkgs.libpng
+      pkgs.libx11
+      pkgs.libxrandr
+      pkgs.libxinerama
+      pkgs.libxcursor
+      pkgs.libxrender
+      pkgs.libxext
+      pkgs.libxcb
+      pkgs.libxkbcommon
+    ];
+
+    sourceRoot = ".";
+
+    unpackPhase = ''
+      runHook preUnpack
+      unzip -q $src
+      runHook postUnpack
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      # The archive extracts to ./Rack2Pro
+      ARCHIVE_DIR="./Rack2Pro"
+
+      mkdir -p $out/opt/vcvrack-pro
+      cp -r "$ARCHIVE_DIR"/* $out/opt/vcvrack-pro/
+
+      # Install the Rack binary
+      mkdir -p $out/bin
+      cp $out/opt/vcvrack-pro/Rack $out/bin/RackPro
+      chmod +x $out/bin/RackPro
+
+      # --- VST3, CLAP, and FX plugin bundles (at zip root, outside Rack2Pro/) ---
+      mkdir -p $out/share/{clap,vst3}
+
+      # CLAP
+      if [ -f "VCV Rack 2.clap" ]; then
+        cp -r "VCV Rack 2.clap" $out/share/clap/
+      fi
+
+      # VST3 (directory bundle)
+      if [ -d "VCV Rack 2.vst3" ]; then
+        cp -r "VCV Rack 2.vst3" $out/share/vst3/
+      fi
+
+      # FX standalone .so
+      if [ -f "VCV Rack 2 FX.so" ]; then
+        mkdir -p $out/share/vcvrack-pro
+        cp "VCV Rack 2 FX.so" $out/share/vcvrack-pro/
+      fi
+
+      # Wrap so Nix-provided libs are on the search path alongside bundled ones.
+      wrapProgram $out/bin/RackPro --chdir "$out/opt/vcvrack-pro" --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath buildInputs}" --set FONTCONFIG_FILE "${pkgs.fontconfig.out}/etc/fonts/fonts.conf"
+
+      # Desktop entry + icon
+      mkdir -p $out/share/{applications,icons/hicolor/scalable/apps}
+
+      cat > $out/share/applications/vcvrack-pro.desktop <<'EOF'
+      [Desktop Entry]
+      Name=VCV Rack Pro
+      GenericName=Virtual Modular Synthesizer
+      Comment=Professional virtual modular synthesizer by VCV
+      Exec=RackPro
+      Icon=vcvrack-pro
+      Terminal=false
+      Type=Application
+      Categories=AudioVideo;Audio;Music;
+      EOF
+
+      # Copy or link the SVG icon if it exists
+      if [ -f "$out/opt/vcvrack-pro/Rack.svg" ]; then
+        cp "$out/opt/vcvrack-pro/Rack.svg" $out/share/icons/hicolor/scalable/apps/vcvrack-pro.svg
+      fi
+
+      runHook postInstall
+    '';
+
+    meta = with lib; {
+      description = "VCV Rack Pro — professional virtual modular synthesizer";
+      homepage = "https://vcvrack.com/";
+      license = licenses.unfree;
+      platforms = [ "x86_64-linux" ];
+      sourceProvenance = sourceModels.binary;
+      maintainers = [ ];
+    };
+  };
 
   # --- Pianoteq (proprietary) ---
   # Downloaded manually (Modartt uses expiring session-scoped URLs).
   # Run `make sources-prefetch` after placing the tarball in sources/.
-  #
-  # NOTE: This archive only contains the standalone binary.  The VST3/AU
-  # plugins are distributed separately by Modartt and must be added manually
-  # (e.g. into ~/.vst3/) or packaged in a separate derivation.
   # __impure flag (passed via `make switch`) allows getEnv to read from
   # the filesystem rather than the flake's git-tracked store copy.
   pianoteqSrc = builtins.path {
@@ -28,7 +146,10 @@ let
 
     # autoPatchelfHook rewrites the ELF interpreter and RPATH so the
     # proprietary binary can find Nix-provided shared libraries.
-    nativeBuildInputs = [ pkgs.autoPatchelfHook pkgs.makeWrapper ];
+    nativeBuildInputs = [
+      pkgs.autoPatchelfHook
+      pkgs.makeWrapper
+    ];
     buildInputs = [
       pkgs.stdenv.cc.cc.lib
       pkgs.alsa-lib
@@ -73,6 +194,15 @@ let
       Categories=AudioVideo;Audio;Music;
       EOF
 
+      # --- VST3 plugin ---
+      mkdir -p $out/share/vst3
+      cp -r "$BASE/x86-64bit/Pianoteq 9.vst3" $out/share/vst3/
+
+      # Patch the VST3 .so so autoPatchelfHook can fix its RPATH
+      mkdir -p $out/lib
+      chmod +w $out/share/vst3/Pianoteq\ 9.vst3/Contents/x86_64-linux/Pianoteq\ 9.so
+      ln -s $out/share/vst3/Pianoteq\ 9.vst3/Contents/x86_64-linux/Pianoteq\ 9.so $out/lib/
+
       runHook postInstall
     '';
 
@@ -95,7 +225,14 @@ let
 
   stemdeck = pkgs.writeShellApplication {
     name = "stemdeck";
-    runtimeInputs = [ pkgs.uv pkgs.ffmpeg pkgs.git pkgs.python312 pkgs.chromium pkgs.curl ];
+    runtimeInputs = [
+      pkgs.uv
+      pkgs.ffmpeg
+      pkgs.git
+      pkgs.python312
+      pkgs.chromium
+      pkgs.curl
+    ];
     text = ''
       STEMDECK_DIR="${stemdeckDir}"
       REPO="https://github.com/stemdeckapp/stemdeck"
@@ -199,16 +336,29 @@ let
       esac
     '';
   };
+
+  # Wrap Bitwig so VCV Rack's CLAP/VST3 plugins can find libRack.so.
+  bitwig-studio-wrapped = pkgs.symlinkJoin {
+    name = "bitwig-studio";
+    paths = [ pkgs.bitwig-studio ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/bitwig-studio \
+        --set RACK_SYSTEM_DIR "${vcvrack-pro}/opt/vcvrack-pro"
+    '';
+  };
 in
 {
+
   home.packages = [
     bottles-overridden
     pianoteq
-    pkgs.bitwig-studio
+    bitwig-studio-wrapped
     pkgs.neural-amp-modeler-lv2
     pkgs.yabridge
     pkgs.yabridgectl
     stemdeck
+    vcvrack-pro
   ];
 
   xdg.desktopEntries.stemdeck = {
@@ -218,7 +368,11 @@ in
     exec = "stemdeck start";
     icon = "audio-x-generic";
     terminal = false;
-    categories = [ "AudioVideo" "Audio" "Music" ];
+    categories = [
+      "AudioVideo"
+      "Audio"
+      "Music"
+    ];
     type = "Application";
   };
 
@@ -229,7 +383,34 @@ in
     exec = "Pianoteq";
     icon = "audio-x-generic";
     terminal = false;
-    categories = [ "AudioVideo" "Audio" "Music" ];
+    categories = [
+      "AudioVideo"
+      "Audio"
+      "Music"
+    ];
     type = "Application";
+  };
+
+  xdg.desktopEntries.vcvrack-pro = {
+    name = "VCV Rack Pro";
+    genericName = "Virtual Modular Synthesizer";
+    comment = "Professional virtual modular synthesizer by VCV";
+    exec = "RackPro";
+    icon = "vcvrack-pro";
+    terminal = false;
+    categories = [
+      "AudioVideo"
+      "Audio"
+      "Music"
+    ];
+    type = "Application";
+  };
+
+  # Symlink CLAP and VST3 bundles into user plugin directories so Bitwig
+  # (and other DAWs) can discover them.
+  home.file = {
+    ".clap/VCV Rack 2.clap".source = "${vcvrack-pro}/share/clap/VCV Rack 2.clap";
+    ".vst3/VCV Rack 2.vst3".source = "${vcvrack-pro}/share/vst3/VCV Rack 2.vst3";
+    ".vst3/Pianoteq 9.vst3".source = "${pianoteq}/share/vst3/Pianoteq 9.vst3";
   };
 }

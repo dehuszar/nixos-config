@@ -3,7 +3,12 @@
 # Home Manager entry point for user `sam`: identity, the shared package set,
 # and misc program config. Desktop (mangowm) and VM concerns live under
 # modules/home/ and are imported below.
-{ pkgs, lib, inputs, ... }:
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
 
 let
   # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
@@ -102,6 +107,7 @@ in
     rclone
     simple-scan
     thorium-reader
+    unzip
   ];
 
   fonts.fontconfig.enable = true;
