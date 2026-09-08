@@ -94,6 +94,7 @@ in
     gimp
     impala
     inkscape
+    ladybird
     libation
     obsidian
     openscad
