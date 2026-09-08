@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# ~/.local/bin/nixos-config-spawn
+#
+# Opens three ghostty windows (nvim, pi-sbx, shell) on workspace 9.
+# Idempotent — skips windows that are already running.
+
+all_running=true
+
+# Guard: only spawn windows that aren't already running
+if ! pgrep -f "ghostty.*--class=nixos-config-nvim" >/dev/null 2>&1; then
+  all_running=false
+  ghostty --class=nixos-config-nvim --title="nvim" \
+    --working-directory=/home/sam/nixos-config \
+    -e nvim &
+fi
+
+if ! pgrep -f "ghostty.*--class=nixos-config-sbx" >/dev/null 2>&1; then
+  all_running=false
+  ghostty --class=nixos-config-sbx --title="pi-sbx" \
+    --working-directory=/home/sam/nixos-config \
+    -e bash -c "pi-sbx.sh nixos-config" &
+fi
+
+if ! pgrep -f "ghostty.*--class=nixos-config-shell" >/dev/null 2>&1; then
+  all_running=false
+  ghostty --class=nixos-config-shell --title="shell" \
+    --working-directory=/home/sam/nixos-config \
+    -e bash &
+fi
+
+if [ "$all_running" = true ]; then
+  # All three already running — just give mango a moment to settle
+  sleep 0.2
+else
+  # Wait for newly spawned windows to appear
+  wait
+  sleep 0.5
+fi
+
+# Switch to workspace 9 via mango's IPC (view takes a bitmask;
+# tag 9 = 1 << 8 = 256)
+mmsg dispatch view,256 2>/dev/null || true

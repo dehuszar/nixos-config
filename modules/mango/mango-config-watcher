@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# ~/.local/bin/mango-config-watcher
+#
+# Polls ~/.config/mango/*.conf for changes (mtime-based).
+# When any file is modified, triggers `mmsg dispatch reload_config`.
+# Designed to run as a systemd user service alongside mangowm.
+
+CONFIG_DIR="$HOME/.config/mango"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mango-watcher"
+STATE_FILE="$STATE_DIR/mtimes"
+POLL_INTERVAL=1
+
+mkdir -p "$STATE_DIR"
+
+# Snapshot: build "path mtime" lines for all .conf files
+snapshot() {
+  find -L "$CONFIG_DIR" -maxdepth 1 -name '*.conf' -printf '%p %T@\n' 2>/dev/null | sort
+}
+
+# First run: take initial snapshot and wait
+snapshot > "$STATE_FILE"
+sleep "$POLL_INTERVAL"
+
+while true; do
+  current="$(snapshot)"
+  previous="$(cat "$STATE_FILE" 2>/dev/null)"
+
+  if [ "$current" != "$previous" ]; then
+    echo "$(date '+%F %T') config change detected — reloading"
+    mmsg dispatch reload_config 2>/dev/null || true
+    echo "$current" > "$STATE_FILE"
+  fi
+
+  sleep "$POLL_INTERVAL"
+done
