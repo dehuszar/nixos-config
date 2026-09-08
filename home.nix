@@ -3,7 +3,7 @@
 # Home Manager entry point for user `sam`: identity, the shared package set,
 # and misc program config. Desktop (mangowm) and VM concerns live under
 # modules/home/ and are imported below.
-{ pkgs, lib, ... }:
+{ pkgs, lib, inputs, ... }:
 
 let
   # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
@@ -64,6 +64,7 @@ in
     ./modules/home/neovim.nix
     ./modules/home/noctalia-shell.nix
     ./modules/home/vm-resize.nix
+    inputs.hashistack.homeManagerModules.controller
   ];
 
   home.username = "sam";
@@ -134,6 +135,8 @@ in
 
   targets.genericLinux.enable = true;
   targets.genericLinux.gpu.enable = true;
+
+  services.hashistack.controller.enable = true;
 
   xdg.configFile = {
     "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;

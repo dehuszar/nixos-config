@@ -31,6 +31,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    hashistack = {
+      url = "github:dehuszar/hashistack-config/nix-migration?dir=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -51,6 +56,7 @@
       nixvim,
       disko,
       brother-mfc9970cdw,
+      hashistack,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
