@@ -79,6 +79,7 @@ in
   home.packages = with pkgs; [
     blender
     bluetui
+    chromium
     cura-appimage
     dbeaver-bin
     docker-sbx

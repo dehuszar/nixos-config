@@ -15,12 +15,14 @@ let
 
   stemdeck = pkgs.writeShellApplication {
     name = "stemdeck";
-    runtimeInputs = [ pkgs.uv pkgs.ffmpeg pkgs.git pkgs.python312 ];
+    runtimeInputs = [ pkgs.uv pkgs.ffmpeg pkgs.git pkgs.python312 pkgs.chromium pkgs.curl ];
     text = ''
       STEMDECK_DIR="${stemdeckDir}"
       REPO="https://github.com/stemdeckapp/stemdeck"
       NIX_PYTHON="${pkgs.python312}/bin/python3.12"
       export UV_PYTHON="$NIX_PYTHON"
+      PORT="''${PORT:-8000}"
+      HOST="''${HOST:-0.0.0.0}"
       # Needed so PyPI wheels (numpy, torch, etc.) can find the C++ runtime.
       export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
 
@@ -53,11 +55,45 @@ let
         start)
           ensure_venv
           cd "$STEMDECK_DIR"
-          STEMDECK_PERSIST_LIBRARY="''${STEMDECK_PERSIST_LIBRARY:-1}" \
-            .venv/bin/uvicorn app.main:app \
-              --host "''${HOST:-0.0.0.0}" \
-              --port "''${PORT:-8000}" \
-              --timeout-graceful-shutdown 2
+          mkdir -p "$STEMDECK_DIR/.run"
+          # If already running, just open the browser.
+          if curl -sf "http://127.0.0.1:$PORT/" >/dev/null 2>&1; then
+            echo "server already running, opening browser"
+            chromium --ozone-platform-hint=auto --app="http://127.0.0.1:$PORT/" &>/dev/null &
+            disown
+            exit 0
+          fi
+          export STEMDECK_PERSIST_LIBRARY="''${STEMDECK_PERSIST_LIBRARY:-1}"
+          "$STEMDECK_DIR/.venv/bin/uvicorn" app.main:app \
+              --host "$HOST" \
+              --port "$PORT" \
+              --timeout-graceful-shutdown 2 \
+              >>"$STEMDECK_DIR/.run/uvicorn.log" 2>&1 &
+          _PID=$!
+          echo "waiting for server (pid $_PID)..."
+          for _ in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:$PORT/" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          if ! curl -sf "http://127.0.0.1:$PORT/" >/dev/null 2>&1; then
+            echo "server failed to start — see $STEMDECK_DIR/.run/uvicorn.log"
+            exit 1
+          fi
+          echo "opening http://127.0.0.1:$PORT/"
+          chromium --ozone-platform-hint=auto --app="http://127.0.0.1:$PORT/" &>/dev/null &
+          _CHROMIUM_PID=$!
+          # When the browser window closes, stop the server.
+          (
+            while kill -0 "$_CHROMIUM_PID" 2>/dev/null; do
+              sleep 2
+            done
+            sleep 1
+            "$0" stop
+          ) &>/dev/null &
+          disown
+          exit 0
           ;;
         stop)
           cd "$STEMDECK_DIR" 2>/dev/null || true
@@ -93,4 +129,15 @@ in
     pkgs.yabridgectl
     stemdeck
   ];
+
+  xdg.desktopEntries.stemdeck = {
+    name = "StemDeck";
+    genericName = "Stem Separator";
+    comment = "Local AI-powered audio stem separation";
+    exec = "stemdeck start";
+    icon = "audio-x-generic";
+    terminal = false;
+    categories = [ "AudioVideo" "Audio" "Music" ];
+    type = "Application";
+  };
 }
