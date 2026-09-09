@@ -3,6 +3,19 @@ set -euo pipefail
 mkdir -p "$HOME/Pictures/Screenshots"
 filepath="$HOME/Pictures/Screenshots/$(date +%Y%m%d%H%M%S).png"
 
+CONFIG="$HOME/.config/mango/mango.conf"
+
+# Disable blur before capturing, restore on exit (even on abort)
+set_blur() {
+  sed -i "s/^blur_layer = [0-9]/blur_layer = $1/" "$CONFIG" || true
+  mmsg dispatch reload_config 2>/dev/null || true
+  if [ "$1" = "0" ]; then
+    sleep 0.2  # let compositor settle before capture
+  fi
+}
+trap 'set_blur 1' EXIT
+set_blur 0
+
 case "${1:-fullscreen}" in
   region)
     g=$(slurp -d); [ -z "$g" ] && exit 1
