@@ -72,6 +72,7 @@
     wiremix
     wl-clip-persist
     wl-clipboard
+    wlr-randr
     xdg-desktop-portal
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr

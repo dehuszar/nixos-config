@@ -179,4 +179,28 @@
       WantedBy = [ "graphical-session.target" ];
     };
   };
+
+  # ── Auto-rotate (accelerometer → screen transform) ───────────────
+  # Reads the accelerometer directly from /sys/bus/iio/devices/ and
+  # rotates eDP-1 via wlr-randr to match how you're holding the Yoga.
+  home.file.".local/bin/mango-auto-rotate" = {
+    source = ../mango/mango-auto-rotate;
+    executable = true;
+  };
+
+  systemd.user.services.mango-auto-rotate = {
+    Unit = {
+      Description = "Auto-rotate Mango display based on accelerometer orientation";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "%h/.local/bin/mango-auto-rotate";
+      Restart = "always";
+      RestartSec = 5;
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
+  };
 }

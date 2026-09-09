@@ -1,0 +1,72 @@
+#!/bin/sh
+# mango-auto-rotate
+#
+# Reads the accelerometer directly from /sys/bus/iio/devices/ and rotates
+# the Mango internal display (eDP-1) to match how you're holding the Yoga.
+# No iio-sensor-proxy dependency needed.
+#
+# Transform names (wlr-randr format):
+#   normal   = landscape
+#   90       = portrait, left edge up
+#   180      = landscape, upside down
+#   270      = portrait, right edge up
+
+ACCEL_DEV="${MANGO_ACCEL_DEV:-/sys/bus/iio/devices/iio:device1}"
+MONITOR="${MANGO_ROTATE_MONITOR:-eDP-1}"
+DEBOUNCE_SEC="${MANGO_ROTATE_DEBOUNCE:-1}"
+# Hysteresis: ignore gravity below this fraction of 1g to reduce jitter
+# when the device is near a boundary.  Raw value; adjust per device.
+THRESHOLD="${MANGO_ACCEL_THRESHOLD:-2000}"
+
+LAST_TRANSFORM=""
+LAST_TIME=0
+
+set_transform() {
+    transform="$1"
+    now=$(date +%s)
+    elapsed=$((now - LAST_TIME))
+
+    if [ "$transform" = "$LAST_TRANSFORM" ] && [ "$elapsed" -lt "$DEBOUNCE_SEC" ]; then
+        return
+    fi
+
+    LAST_TRANSFORM="$transform"
+    LAST_TIME="$now"
+
+    wlr-randr --output "$MONITOR" --transform "$transform" 2>/dev/null || true
+}
+
+# ── Main loop ─────────────────────────────────────────────────────
+while true; do
+    # Read raw 3-axis accelerometer values
+    x=$(cat "$ACCEL_DEV/in_accel_x_raw" 2>/dev/null) || { sleep 1; continue; }
+    y=$(cat "$ACCEL_DEV/in_accel_y_raw" 2>/dev/null) || { sleep 1; continue; }
+    z=$(cat "$ACCEL_DEV/in_accel_z_raw" 2>/dev/null) || { sleep 1; continue; }
+
+    # Absolute values
+    ax=${x#-}  # strip sign
+    ay=${y#-}
+    az=${z#-}
+
+    # Determine dominant axis → orientation
+    if [ "$ay" -gt "$ax" ] && [ "$ay" -gt "$az" ]; then
+        # Y dominant → landscape
+        if [ "$y" -gt 0 ]; then
+            set_transform 180   # top edge down → upside down
+        else
+            set_transform normal  # bottom edge down → normal landscape
+        fi
+    elif [ "$ax" -gt "$az" ]; then
+        # X dominant → portrait
+        if [ "$x" -gt 0 ]; then
+            set_transform 90    # left edge down
+        else
+            set_transform 270   # right edge down
+        fi
+    else
+        # Z dominant → near flat on table, keep current
+        :
+    fi
+
+    sleep 1
+done
