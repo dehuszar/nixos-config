@@ -6,6 +6,8 @@ filepath="$HOME/Pictures/Screenshots/$(date +%Y%m%d%H%M%S).png"
 CONFIG="$HOME/.config/mango/mango.conf"
 
 # Disable blur before capturing, restore on exit (even on abort)
+# If blur remains active, the desktop background image gets pulled above the
+# selection mask, making selection ranges impossible to draw accurately
 set_blur() {
   sed -i "s/^blur_layer = [0-9]/blur_layer = $1/" "$CONFIG" || true
   mmsg dispatch reload_config 2>/dev/null || true
