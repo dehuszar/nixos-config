@@ -2,7 +2,12 @@
 #
 # Home Manager side of mangowm: minimal Nix config that sources everything
 # from ~/.config/mango/*.conf so you can iterate without rebuilding.
-{ inputs, pkgs, lib, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   imports = [ inputs.mangowm.hmModules.mango ];
@@ -38,6 +43,11 @@
 
   home.file.".local/bin/mango-config-watcher" = {
     source = ../mango/mango-config-watcher;
+    executable = true;
+  };
+
+  home.file.".local/bin/screenshot" = {
+    source = ../mango/screenshot;
     executable = true;
   };
 

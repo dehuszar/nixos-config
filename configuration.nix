@@ -32,6 +32,7 @@
   environment.systemPackages = with pkgs; [
     git
     gnumake
+    jq
     kdePackages.qt5compat
     nss
     nssTools

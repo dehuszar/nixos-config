@@ -2,7 +2,12 @@
 #
 # The graphical desktop, shared by both the `hostname` and `vm` configs:
 # mangowm (compositor), seatd (device access), greetd (login/session).
-{ pkgs, lib, isVM, ... }:
+{
+  pkgs,
+  lib,
+  isVM,
+  ...
+}:
 {
   # NixOS-level mango integration (portal, polkit, session entry).
   # `programs.mango` has no `settings`/`extraConfig` options and writes no
@@ -52,6 +57,7 @@
     cliphist
     ddcutil
     greetd
+    grim
     mpvpaper
     noto-fonts
     pipewire
@@ -59,7 +65,10 @@
     pywalfox-native
     qt6.qt3d
     qt6.qtbase
+    satty
+    slurp
     tuigreet
+    wayfreeze
     wiremix
     wl-clip-persist
     wl-clipboard
