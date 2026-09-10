@@ -132,6 +132,36 @@
         };
       };
 
+      # -- Idle management (Noctalia built-in) --
+      # Lock after 30 min idle, monitor off 15 min after that (45 min total).
+      # No suspend — DPMS only.
+      idle = {
+        behavior_order = [ "lock" "screen-off" "suspend" ];
+        pre_action_fade_seconds = 2.0;
+
+        behavior = {
+          lock = {
+            timeout = 1800;  # 30 min
+            action  = "lock";
+          };
+          screen-off = {
+            timeout = 2700;  # 45 min total (15 min after lock)
+            action  = "screen_off";
+          };
+          suspend.enabled = false;  # no suspend on idle
+        };
+      };
+
+      # -- Lock screen --
+      lockscreen = {
+        enabled             = true;
+        lock_before_suspend = true;
+        fingerprint         = true;
+        blurred_desktop     = false;
+        blur_intensity      = 0.5;
+        tint_intensity      = 0.3;
+      };
+
       # -- Weather --
       weather.unit = "imperial";
 

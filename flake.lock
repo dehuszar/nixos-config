@@ -214,8 +214,8 @@
         "nixvim": "nixvim"
       },
       "locked": {
-        "lastModified": 1789070298,
-        "narHash": "sha256-2YB6BvhREack5cRF+TkhYo0e4eUiwkEqgxteL66imYY=",
+        "lastModified": 1789072318,
+        "narHash": "sha256-1laAfJbfNKna09Jrc1NQfBXQ3b5zsAnYdju4x01Yorg=",
         "path": "/home/sam/nix-flakes/nixos-devtools",
         "type": "path"
       },

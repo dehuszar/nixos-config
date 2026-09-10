@@ -22,10 +22,6 @@
         command = "mango";
         user = "sam"; # auto-login on first start, no password required
       };
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --cmd mango";
-        user = "greeter";
-      };
     };
   };
 
@@ -45,6 +41,7 @@
     settings = {
       cursor.size = 24;
       keyboard.layout = "us";
+      output."DP-3".enabled = false;
     };
     cursorTheme = {
       package = pkgs.bibata-cursors;
@@ -53,6 +50,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    baobab
     btop
     cliphist
     ddcutil
