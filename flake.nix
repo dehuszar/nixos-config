@@ -36,6 +36,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-devtools = {
+      url = "path:/home/sam/nix-flakes/nixos-devtools";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -57,6 +62,7 @@
       disko,
       brother-mfc9970cdw,
       hashistack,
+      nixos-devtools,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:

@@ -66,10 +66,10 @@ in
   imports = [
     ./modules/home/recording.nix
     ./modules/home/mango.nix
-    ./modules/home/neovim.nix
     ./modules/home/noctalia-shell.nix
     ./modules/home/vm-resize.nix
     inputs.hashistack.homeManagerModules.controller
+    inputs.nixos-devtools.homeManagerModules.dev
   ];
 
   home.username = "sam";
