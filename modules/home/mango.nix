@@ -51,12 +51,12 @@
   };
 
   # ── Symlink mango.conf so the repo copy is authoritative ──────────────
-  # The config watcher polls ~/.config/mango/mango.conf for mtime changes.
-  # This symlink keeps it in sync with the repo copy.
-  home.file.".config/mango/mango.conf" = {
-    source = ../mango/mango.conf;
-    force = true;
-  };
+  # Direct symlink (bypasses the Nix store) so the config watcher sees
+  # mtime changes when you edit the repo copy.  The watcher polls
+  # ~/.config/mango/mango.conf and runs `mmsg dispatch reload_config`.
+  home.activation.mango-conf-symlink = ''
+    ln -sf "$HOME/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
+  '';
 
   # ── Config watcher service ────────────────────────────────────────────
   # Polls ~/.config/mango/*.conf every second.  When mtime changes,
