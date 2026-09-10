@@ -13,6 +13,8 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.resumeDevice = "/dev/mapper/crypted";
+  boot.kernelParams = [ "resume_offset=27580416" ];
   # --- UEFI Secure Boot (lanzaboote) - commented out until needed ---
   # Requires the lanzaboote input + module in flake.nix; REPLACES systemd-boot.
   # boot.loader.systemd-boot.enable = lib.mkForce false;
@@ -65,6 +67,8 @@
     openFirewall = true;
   };
   services.ipp-usb.enable = true;
+  services.logind.settings.Login.HandleLidSwitch = "hibernate";
+  services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
   services.printing = {
     enable = true;
   };

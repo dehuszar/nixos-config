@@ -153,6 +153,10 @@
       CURRENT_STATE=""
 
       while true; do
+        # DP-3 is teh same monitor as HDMI-A-1; always kill it
+        if wlr-randr 2>/dev/null | grep -A2 "^DP-3" | grep -q "Enabled: yes"; then
+          mmsg dispatch disable_monitor,DP-3 2>/dev/null || true
+        fi
         if [ -f "$LID_STATE" ]; then
           STATE=$(awk '{print $2}' "$LID_STATE" 2>/dev/null)
           if [ -n "$STATE" ] && [ "$STATE" != "$CURRENT_STATE" ]; then
