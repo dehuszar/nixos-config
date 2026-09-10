@@ -20,7 +20,6 @@
       env = [ ];
       exec-once = [
         "noctalia"
-        "mmsg dispatch disable_monitor,DP-3"
       ];
       # All bindings, blur, shadows, window rules, etc. live in this file —
       # editable without a Nix rebuild.  Reload with Super+Shift+R or let
@@ -49,6 +48,14 @@
   home.file.".local/bin/screenshot" = {
     source = ../mango/screenshot;
     executable = true;
+  };
+
+  # ── Symlink mango.conf so the repo copy is authoritative ──────────────
+  # The config watcher polls ~/.config/mango/mango.conf for mtime changes.
+  # This symlink keeps it in sync with the repo copy.
+  home.file.".config/mango/mango.conf" = {
+    source = ../mango/mango.conf;
+    force = true;
   };
 
   # ── Config watcher service ────────────────────────────────────────────
