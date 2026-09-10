@@ -127,8 +127,8 @@
   systemd.user.services.mango-dock-inhibit = {
     Unit = {
       Description = "Inhibit suspend while external monitor is connected";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ "default.target" ];
+      PartOf = [ "default.target" ];
     };
     Service = {
       ExecStart = "%h/.local/bin/mango-dock-inhibit";
@@ -136,7 +136,7 @@
       RestartSec = 2;
     };
     Install = {
-      WantedBy = [ "graphical-session.target" ];
+      WantedBy = [ "default.target" ];
     };
   };
 
@@ -154,7 +154,7 @@
 
       while true; do
         # DP-3 is teh same monitor as HDMI-A-1; always kill it
-        if wlr-randr 2>/dev/null | grep -A2 "^DP-3" | grep -q "Enabled: yes"; then
+        if wlr-randr 2>/dev/null | grep -A10 "^DP-3" | grep -q "Enabled: yes"; then
           mmsg dispatch disable_monitor,DP-3 2>/dev/null || true
         fi
         if [ -f "$LID_STATE" ]; then
@@ -178,8 +178,8 @@
   systemd.user.services.mango-lid-monitor = {
     Unit = {
       Description = "Toggle eDP-1 on laptop lid close/open for mangowm";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ "default.target" ];
+      PartOf = [ "default.target" ];
     };
     Service = {
       ExecStart = "%h/.local/bin/mango-lid-monitor";
@@ -187,7 +187,7 @@
       RestartSec = 2;
     };
     Install = {
-      WantedBy = [ "graphical-session.target" ];
+      WantedBy = [ "default.target" ];
     };
   };
 
@@ -202,8 +202,8 @@
   systemd.user.services.mango-auto-rotate = {
     Unit = {
       Description = "Auto-rotate Mango display based on accelerometer orientation";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
+      After = [ "default.target" ];
+      PartOf = [ "default.target" ];
     };
     Service = {
       ExecStart = "%h/.local/bin/mango-auto-rotate";
@@ -211,7 +211,7 @@
       RestartSec = 5;
     };
     Install = {
-      WantedBy = [ "graphical-session.target" ];
+      WantedBy = [ "default.target" ];
     };
   };
 }
