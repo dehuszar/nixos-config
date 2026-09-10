@@ -11,6 +11,18 @@
 let
   bottles-overridden = pkgs.bottles.override { removeWarningPopup = true; };
 
+  # --- Bitwig Studio 6.1.1 (override nixpkgs version) ---
+  bitwig-studio6-overridden = pkgs.bitwig-studio6.overrideAttrs (oldAttrs: rec {
+    version = "6.1.1";
+    src = pkgs.fetchurl {
+      name = "bitwig-studio-${version}.deb";
+      url = "https://www.bitwig.com/dl/Bitwig%20Studio/${version}/installer_linux";
+      # TODO: Update this hash after downloading 6.1.1
+      # Run: nix hash file <downloaded-deb-file>
+      hash = "sha256-FBe0R6YW4IS1OPvCwWseQvJnn7OrPn1uZ0v/GKRIIYE=";
+    };
+  });
+
   # --- VCV Rack Pro (proprietary) ---
   # Downloaded manually from vcvrack.com (requires Pro license).
   # Place the zip in sources/ and run `make switch`.
@@ -340,7 +352,7 @@ let
   # Wrap Bitwig so VCV Rack's CLAP/VST3 plugins can find libRack.so.
   bitwig-studio-wrapped = pkgs.symlinkJoin {
     name = "bitwig-studio";
-    paths = [ pkgs.bitwig-studio ];
+    paths = [ bitwig-studio6-overridden ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/bitwig-studio \
