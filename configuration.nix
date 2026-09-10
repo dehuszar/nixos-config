@@ -73,6 +73,13 @@
     enable = true;
   };
 
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 65536; # 64GB in megabytes
+    }
+  ];
+
   system.stateVersion = "26.11";
 
   users.users.sam = {
