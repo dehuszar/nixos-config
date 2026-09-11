@@ -74,6 +74,10 @@
     enable = true;
   };
 
+  services.udev.extraRules = ''
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="keymapp", MODE="0660"
+  '';
+
   swapDevices = [
     {
       device = "/swapfile";
@@ -83,11 +87,13 @@
 
   system.stateVersion = "26.11";
 
+  users.groups.keymapp = { };
   users.users.sam = {
     isNormalUser = true;
     # 'wheel' for sudo; 'video'/'input' for DRM & input device access;
     # 'seat' for the seatd socket.
     extraGroups = [
+      "keymapp"
       "wheel"
       "video"
       "input"

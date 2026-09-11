@@ -56,6 +56,7 @@
     ddcutil
     greetd
     grim
+    keymapp
     mpvpaper
     noto-fonts
     pipewire
