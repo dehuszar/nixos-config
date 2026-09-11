@@ -28,6 +28,8 @@ ping -c 1 github.com
 Clone the repo and enter the directory:
 
 ```bash
+mkdir -p nix
+cd nix/
 git clone <repo-url>
 cd nixos-config
 ```

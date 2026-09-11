@@ -27,7 +27,7 @@
     };
 
     brother-mfc9970cdw = {
-      url = "github:dehuszar/nixos-brother-mfc9970cdw";
+      url = "path:/home/sam/nix/nix-flakes/nixos-brother-mfc9970cdw";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -37,7 +37,7 @@
     };
 
     nixos-devtools = {
-      url = "path:/home/sam/nix-flakes/nixos-devtools";
+      url = "path:/home/sam/nix/nix-flakes/nixos-devtools";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -72,10 +72,10 @@
       # Private modules — loaded from sibling repo. Each .nix file
       # (except default.nix) is imported directly.
       privateModules = [
-        /home/sam/nixos-config-private/brother-printer.nix
-        /home/sam/nixos-config-private/proton-pass.nix
+        /home/sam/nix/nixos-config-private/brother-printer.nix
+        /home/sam/nix/nixos-config-private/proton-pass.nix
       ];
-      
+
       # Shared module list for every machine. `isVM` is injected via
       # specialArgs so each config can flip VM-only workarounds.
       mkNixos =
@@ -100,6 +100,7 @@
             }
             mangowm.nixosModules.mango
             noctalia.nixosModules.default
+            nixos-devtools.nixosModules.default
             brother-mfc9970cdw.nixosModules.default
             # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
           ]

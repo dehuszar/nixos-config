@@ -1,10 +1,15 @@
 # modules/first-boot.nix
 #
 # One-shot systemd service that runs on first boot and sets up the
-# nixos-config repo in ~sam/nixos-config.  The repo is cloned via HTTPS
+# nixos-config repo in ~/sam/nix/nixos-config.  The repo is cloned via HTTPS
 # (public), and the SSH remote is pre-configured so pushes work as soon
 # as the user adds their SSH key.
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   systemd.services.clone-nixos-config = {
@@ -16,7 +21,7 @@
       RemainAfterExit = "no";
     };
     script = ''
-      REPO_DIR="/home/sam/nixos-config"
+      REPO_DIR="/home/sam/nix/nixos-config"
       HTTPS_URL="https://github.com/dehuszar/nixos-config.git"
       SSH_URL="git@github.com:dehuszar/nixos-config.git"
 
@@ -37,6 +42,6 @@
     # Remove this unit after it succeeds so it doesn't run again on
     # subsequent boots (and so a re-install of the same config won't
     # clobber a working checkout).
-    unitConfig.ConditionPathExists = "!/home/sam/nixos-config/.git";
+    unitConfig.ConditionPathExists = "!/home/sam/nix/nixos-config/.git";
   };
 }

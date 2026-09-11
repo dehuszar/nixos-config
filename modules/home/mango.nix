@@ -55,7 +55,7 @@
   # mtime changes when you edit the repo copy.  The watcher polls
   # ~/.config/mango/mango.conf and runs `mmsg dispatch reload_config`.
   home.activation.mango-conf-symlink = ''
-    ln -sf "$HOME/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
+    ln -sf "$HOME/nix/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
   '';
 
   # ── Config watcher service ────────────────────────────────────────────

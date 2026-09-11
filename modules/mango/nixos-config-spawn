@@ -10,21 +10,21 @@ all_running=true
 if ! pgrep -f "ghostty.*--class=nixos-config-nvim" >/dev/null 2>&1; then
   all_running=false
   ghostty --class=nixos-config-nvim --title="nvim" \
-    --working-directory=/home/sam/nixos-config \
+    --working-directory=/home/sam/nix/ \
     -e nvim &
 fi
 
 if ! pgrep -f "ghostty.*--class=nixos-config-sbx" >/dev/null 2>&1; then
   all_running=false
   ghostty --class=nixos-config-sbx --title="pi-sbx" \
-    --working-directory=/home/sam/nixos-config \
+    --working-directory=/home/sam/nix/nixos-config \
     -e bash -c "pi-sbx.sh nixos-config" &
 fi
 
 if ! pgrep -f "ghostty.*--class=nixos-config-shell" >/dev/null 2>&1; then
   all_running=false
   ghostty --class=nixos-config-shell --title="shell" \
-    --working-directory=/home/sam/nixos-config \
+    --working-directory=/home/sam/nix/nixos-config \
     -e bash &
 fi
 

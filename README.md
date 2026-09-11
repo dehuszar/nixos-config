@@ -7,7 +7,7 @@ modules, selected by an `isVM` flag threaded through `flake.nix`'s
 `specialArgs`:
 
 | Configuration | `isVM` | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `nixosConfigurations.hostname` | `false` | The real hardware target. Uses the GPU, no VM workarounds. |
 | `nixosConfigurations.vm` | `true` | A QEMU test VM. Renders through virgl (host-side accelerated GL) via the VM-only qemu module. |
 
@@ -114,7 +114,7 @@ make run-cli
 ### Useful mangowm keys (from `modules/home/mango.nix`)
 
 | Keys | Action |
-|---|---|
+| --- | --- |
 | `Super+Return` | spawn `ghostty` |
 | `Super+r` | reload mangowm config |
 | `Super+m` | quit mangowm |
@@ -137,12 +137,16 @@ See **`INSTALL.md`** for the full installation guide — it is designed to be
 read comfortably from the installer TTY/CLI.  Two ways to run it:
 
 **Quick (interactive script)** — no `make` required:
+
 ```bash
 curl -L https://raw.githubusercontent.com/dehuszar/nixos-config/main/install.sh | bash
 ```
 
 **Manual** — if you prefer not to pipe a script:
+
 ```bash
+mkdir -p nix
+cd nix
 git clone <repo-url>
 cd nixos-config
 # then follow the commands in INSTALL.md
@@ -168,15 +172,19 @@ as your working config:
    nmcli device wifi connect "SSID" password "pw"   # use `sudo nmcli` if polkit denies
    nmcli -t connection show --active      # confirm connected
    ```
+
    (GUI management lives in "Networking & wifi" below.)
 
 3. **Set up a GitHub SSH key** so you can push changes back to the repo:
+
    ```bash
    ssh-keygen -t ed25519 -C "you@example.com"   # accept default ~/.ssh/id_ed25519
    cat ~/.ssh/id_ed25519.pub                     # copy the output
    ```
+
    Add the public key: GitHub → **Settings → SSH and GPG keys → New SSH key**.
    Test authentication:
+
    ```bash
    ssh -T git@github.com
    # -> Hi <you>! You've successfully authenticated, but GitHub does not
@@ -185,12 +193,14 @@ as your working config:
 
 4. **Point the remote at your SSH URL** so future `git pull`/`push` use the
    key instead of HTTPS prompts:
+
    ```bash
    git remote set-url origin git@github.com:<you>/nixos-config.git
    git remote -v                                 # confirm
    ```
 
 5. You're now ready to edit config and apply changes:
+
    ```bash
    git pull       # if you cloned earlier
    ...edit...
@@ -277,7 +287,7 @@ nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
 ## Layout
 
 | File | Role |
-|---|---|
+| --- | --- |
 | `flake.nix` | Flake: inputs, `mkNixos` builder, `hostname` + `vm` configs |
 | `configuration.nix` | Shared NixOS core (boot, hardware, locale, networking, users) |
 | `home.nix` | Home Manager entry point (identity, shared packages, programs) |

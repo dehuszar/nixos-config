@@ -27,7 +27,7 @@ let
   # Downloaded manually from vcvrack.com (requires Pro license).
   # Place the zip in sources/ and run `make switch`.
   vcvrack-pro-src = builtins.path {
-    path = "${builtins.getEnv "HOME"}/nixos-config/sources/RackPro-2.6.6-lin-x64.zip";
+    path = "${builtins.getEnv "HOME"}/nix/nixos-config/sources/RackPro-2.6.6-lin-x64.zip";
     name = "RackPro-2.6.6-lin-x64.zip";
   };
 
@@ -146,7 +146,7 @@ let
   # __impure flag (passed via `make switch`) allows getEnv to read from
   # the filesystem rather than the flake's git-tracked store copy.
   pianoteqSrc = builtins.path {
-    path = "${builtins.getEnv "HOME"}/nixos-config/sources/pianoteq_setup_v924.tar.xz";
+    path = "${builtins.getEnv "HOME"}/nix/nixos-config/sources/pianoteq_setup_v924.tar.xz";
     name = "pianoteq-setup-v924";
   };
 
