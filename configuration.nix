@@ -13,8 +13,6 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.resumeDevice = "/dev/mapper/crypted";
-  boot.kernelParams = [ "resume_offset=27580416" ];
   # --- UEFI Secure Boot (lanzaboote) - commented out until needed ---
   # Requires the lanzaboote input + module in flake.nix; REPLACES systemd-boot.
   # boot.loader.systemd-boot.enable = lib.mkForce false;
@@ -59,7 +57,7 @@
     "nix-command"
     "flakes"
   ];
-
+  powerManagement.enable = true;
   programs.steam.enable = true;
 
   services.avahi = {
@@ -70,7 +68,8 @@
   services.ipp-usb.enable = true;
   services.logind.settings.Login.HandleLidSwitch = "suspend";
   services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
-  # services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
+  services.logind.settings.Login.HandleLidSwitchExternalPower =
+    "suspendpowerManagement.enable = true;powerManagement.enable = true;";
   services.printing = {
     enable = true;
   };
@@ -78,13 +77,6 @@
   services.udev.extraRules = ''
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="keymapp", MODE="0660"
   '';
-
-  swapDevices = [
-    {
-      device = "/swapfile";
-      size = 65536; # 64GB in megabytes
-    }
-  ];
 
   system.stateVersion = "26.11";
 
