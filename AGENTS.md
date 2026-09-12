@@ -16,6 +16,12 @@ Nix version: `nix (Nix) 2.35.1`
 
 All edits, instructions, or educational insight should always match what is current practice for that version.
 
+## Design Decisions
+
+- Configuration files which can be hot-reloaded on save like mango.conf and noctalia.conf should not be managed by Nix and written to a read-only store.  They should instead be symlinked to the conf files in this repo.
+
+- The DP-3 display is the same external monitor as the HDMI-A-1 display.  DP-3 should always be disabled, favoring the HDMI output when the external monitor is connected.
+
 ## Cross-Sandbox Operations
 
 When you encounter processes, files, or system state outside the primary sandbox (`$HOME/nixos-config/` and `$HOME/nixos-config-private/`) that need investigation:

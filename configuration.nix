@@ -68,8 +68,9 @@
     openFirewall = true;
   };
   services.ipp-usb.enable = true;
-  services.logind.settings.Login.HandleLidSwitch = "hibernate";
-  services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
+  services.logind.settings.Login.HandleLidSwitch = "suspend";
+  services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
+  # services.logind.settings.Login.HandleLidSwitchExternalPower = "ignore";
   services.printing = {
     enable = true;
   };

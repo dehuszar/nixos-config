@@ -51,11 +51,13 @@
   };
 
   # ── Symlink mango.conf so the repo copy is authoritative ──────────────
-  # Direct symlink (bypasses the Nix store) so the config watcher sees
-  # mtime changes when you edit the repo copy.  The watcher polls
-  # ~/.config/mango/mango.conf and runs `mmsg dispatch reload_config`.
-  home.activation.mango-conf-symlink = ''
-    ln -sf "$HOME/nix/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
+  # Runs after writeBoundary so it overrides any Nix store symlink created
+  # by the upstream mangowm HM module.  Direct symlink (bypasses the Nix
+  # store) so the config watcher sees mtime changes when you edit the repo
+  # copy.  The watcher polls ~/.config/mango/mango.conf and runs
+  # `mmsg dispatch reload_config`.
+  home.activation.mango-conf-symlink = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
   '';
 
   # ── Config watcher service ────────────────────────────────────────────
@@ -148,15 +150,64 @@
       #!/bin/sh
       # Monitors the ACPI lid switch and toggles eDP-1 via mmsg.
       # Runs as a systemd user service alongside mangowm.
+      #
+      # Hotplug-safe: skips sending commands while any DRM hotplug event
+      # is pending (detected via udev monitor) to avoid racing with
+      # mangowm's output reconfiguration, which would crash the compositor.
 
       LID_STATE="/proc/acpi/button/lid/LID/state"
       CURRENT_STATE=""
 
+      # Watch for DRM hotplug events so we can back off during transitions.
+      HOTPLUG_FIF="/tmp/mango-lid-hotplug.fifo"
+      mkfifo "$HOTPLUG_FIF" 2>/dev/null || true
+
+      # Start a background udev monitor for DRM hotplug events.
+      # Each event writes a timestamp to a temp file.
+      # stdbuf forces line-buffered output so events aren't stuck in pipe buffers.
+      HOTPLUG_TS="/tmp/mango-lid-hotplug.ts"
+      (
+        stdbuf -oL udevadm monitor --udev --subsystem-match=drm 2>/dev/null | while read -r _; do
+          date +%s > "$HOTPLUG_TS"
+        done
+      ) &
+      UDEV_PID=$!
+
+      # Seed the timestamp so the first loop iteration has a grace period.
+      # Without this, last_hotplug() returns 0 and in_hotplug_window() is
+      # immediately false — firing wlr-randr before mangowm is ready.
+      date +%s > "$HOTPLUG_TS"
+
+      last_hotplug() {
+        [ -f "$HOTPLUG_TS" ] && cat "$HOTPLUG_TS" 2>/dev/null || echo 0
+      }
+
+      in_hotplug_window() {
+        now=$(date +%s)
+        ts=$(last_hotplug)
+        # If a hotplug event happened in the last 3 seconds, back off.
+        [ $((now - ts)) -lt 3 ] && return 0
+        return 1
+      }
+
+      cleanup() {
+        kill "$UDEV_PID" 2>/dev/null || true
+        rm -f "$HOTPLUG_FIF" "$HOTPLUG_TS"
+      }
+      trap cleanup EXIT
+
       while true; do
-        # DP-3 is teh same monitor as HDMI-A-1; always kill it
-        if wlr-randr 2>/dev/null | grep -A10 "^DP-3" | grep -q "Enabled: yes"; then
-          mmsg dispatch disable_monitor,DP-3 2>/dev/null || true
+        # DP-3 is the same physical port as HDMI-A-1; always kill it if it
+        # gets activated during a hotplug transition.
+        # Only run this when NOT in a hotplug window to avoid crashing mangowm.
+        if ! in_hotplug_window; then
+          if wlr-randr 2>/dev/null | grep -A10 "^DP-3" | grep -q "Enabled: yes"; then
+            mmsg dispatch disable_monitor,DP-3 2>/dev/null || true
+          fi
         fi
+
+        # Lid close/open — always process regardless of hotplug state.
+        # These are ACPI events, not DRM hotplugs, so they're safe to send.
         if [ -f "$LID_STATE" ]; then
           STATE=$(awk '{print $2}' "$LID_STATE" 2>/dev/null)
           if [ -n "$STATE" ] && [ "$STATE" != "$CURRENT_STATE" ]; then
