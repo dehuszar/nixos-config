@@ -6,6 +6,12 @@ build-vm:
 	nix build --impure .#nixosConfigurations.vm.config.system.build.vm
 check:
 	nix flake check --impure
+update:
+	nix flake update
+prune:
+	sudo nix-env \
+		--profile /nix/var/nix/profiles/system \
+		--delete-generations +10
 
 # --- Proprietary sources ---------------------------------------------------
 #

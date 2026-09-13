@@ -11,6 +11,45 @@
 }:
 
 let
+  # Wrapper that injects Proton secrets into the sbx sandbox before running pi.
+  pi-sbx = pkgs.writeShellApplication {
+    name = "pi-sbx.sh";
+    runtimeInputs = [
+      pkgs.proton-pass-cli
+      pkgs.docker-sbx
+    ];
+    text = ''
+      set -euo pipefail
+      NAME="$1"
+      shift
+
+      # Fetch secrets from pass-cli
+      PASS_ITEM=$(pass-cli item view --vault-name Personal --item-title "Lemonade AI API Key" --output json)
+
+      LEMONADE_API_KEY=$(echo "$PASS_ITEM" | jq -r '.item.content.content.Login.password')
+
+      # Extract URLs — adjust selectors if your pass-cli output structure differs
+      LEMONADE_API_DOMAIN_REMOTE=$(echo "$PASS_ITEM" \
+        | jq -r '.item.content.content.Login.urls[] | select(contains("fort-towner"))' \
+        | sed 's|/$||')/v1
+
+      LEMONADE_API_DOMAIN_LOCAL=$(echo "$PASS_ITEM" \
+        | jq -r '.item.content.content.Login.urls[] | select(contains("192.168"))' \
+        | sed 's|/$||')/v1
+
+      echo "Starting sandbox with lemonade AI providers..."
+      echo "  Remote: $LEMONADE_API_DOMAIN_REMOTE"
+      echo "  Local:  $LEMONADE_API_DOMAIN_LOCAL"
+
+      sbx run \
+        -e LEMONADE_API_KEY="$LEMONADE_API_KEY" \
+        -e LEMONADE_API_DOMAIN_REMOTE="$LEMONADE_API_DOMAIN_REMOTE" \
+        -e LEMONADE_API_DOMAIN_LOCAL="$LEMONADE_API_DOMAIN_LOCAL" \
+        --name "$NAME" --kit ~/sbx-shell-pi \
+        "$@" -- -c "pi"
+    '';
+  };
+
   # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
   # Make sure to check modules/home if you are unsure if an alias exists.
   shellAliases = {
@@ -87,10 +126,10 @@ in
     chromium
     cura-appimage
     dbeaver-bin
+    # freecad # temporarily disabled: ifcopenshell build broken in nixpkgs
     docker-sbx
     firefox
     ghostty
-    freecad
     gimp
     impala
     inkscape
@@ -149,4 +188,7 @@ in
   xdg.configFile = {
     "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;
   };
+
+  # Install the pi-sbx wrapper script to ~/.local/bin.
+  home.file.".local/bin/pi-sbx.sh".source = "${pi-sbx}/bin/pi-sbx.sh";
 }
