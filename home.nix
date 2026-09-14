@@ -50,8 +50,9 @@ let
     '';
   };
 
-  # NOTE :: other aliases may be set by their respective modules; i.e. neovim.
-  # Make sure to check modules/home if you are unsure if an alias exists.
+  # NOTE :: other aliases may be set by their respective modules.
+  # Make sure to check modules/home or the nixos-devtools flake if you are
+  # unsure if an alias exists.
   shellAliases = {
     # bitwig backup steps
     bkupBitwig = "AWS_PROFILE=wasabi rclone copy /home/sam/Bitwig\ Studio wasabi:sideffectstudios/Tracks/Bitwig\ Studio -vv --update";
