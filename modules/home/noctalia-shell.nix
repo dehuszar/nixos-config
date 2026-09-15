@@ -3,7 +3,13 @@
 # Home Manager configuration for Noctalia shell.
 # Provides a sleek, customizable desktop shell for Wayland compositors.
 # Replaces quickshell as the shell layer around MangoWM.
-{ inputs, config, lib, pkgs, ... }:
+{
+  inputs,
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [ inputs.noctalia.homeModules.default ];
 
@@ -29,11 +35,6 @@
     systemd.enable = true;
 
     settings = {
-      # -- Accessibility --
-      accessibility = {
-        ui_scale = 1.5;
-      };
-
       # -- Bar --
       bar = {
         default = {
@@ -41,20 +42,40 @@
           contact_shadow = false;
           margin_ends = 0;
 
-          start  = [ "launcher" "workspaces" ];
-          center = [ "clock" "media" ];
-          end    = [ "notifications" "group:g1" "tray" "clipboard" "bluetooth" "volume" "network" "battery" "session" ];
+          start = [
+            "launcher"
+            "workspaces"
+          ];
+          center = [
+            "clock"
+            "media"
+          ];
+          end = [
+            "notifications"
+            "group:g1"
+            "tray"
+            "clipboard"
+            "bluetooth"
+            "volume"
+            "network"
+            "battery"
+            "session"
+          ];
 
           capsule_group = [
             {
-              id                = "g1";
-              enabled           = true;
-              fill              = "surface_variant";
-              opacity           = 1.0;
-              padding           = 6.0;
-              accordion         = false;
+              id = "g1";
+              enabled = true;
+              fill = "surface_variant";
+              opacity = 1.0;
+              padding = 6.0;
+              accordion = false;
               accordion_direction = "end";
-              members           = [ "wallpaper" "wallhaven" "mpvpaper" ];
+              members = [
+                "wallpaper"
+                "wallhaven"
+                "mpvpaper"
+              ];
             }
           ];
         };
@@ -84,8 +105,8 @@
       plugin_settings = {
         "kenn/keybind-cheatsheet" = {
           cheatsheet_layer = "overlay";
-          compositor       = "mango";
-          show_actions     = true;
+          compositor = "mango";
+          show_actions = true;
         };
 
         "noctalia/mpvpaper" = {
@@ -99,22 +120,26 @@
 
       # -- Shell --
       shell = {
-        font                   = "JetBrainsMono Nerd Font";
+        font = "JetBrainsMono Nerd Font";
         settings_show_advanced = true;
-        telemetry_enabled      = true;
+        telemetry_enabled = true;
 
         panel.shadow = false;
       };
 
       # -- Theme --
       theme = {
-        mode           = "dark";
-        source         = "wallpaper";
-        builtin        = "Tokyo-Night";
+        mode = "dark";
+        source = "wallpaper";
+        builtin = "Tokyo-Night";
         wallpaper_scheme = "m3-content";
 
         templates = {
-          builtin_ids = [ "btop" "ghostty" "mango" ];
+          builtin_ids = [
+            "btop"
+            "ghostty"
+            "mango"
+          ];
           community_ids = [
             "opencode"
             "pi-agent"
@@ -136,30 +161,34 @@
       # Lock after 30 min idle, monitor off 15 min after that (45 min total).
       # No suspend — DPMS only.
       idle = {
-        behavior_order = [ "lock" "screen-off" "suspend" ];
+        behavior_order = [
+          "lock"
+          "screen-off"
+          "suspend"
+        ];
         pre_action_fade_seconds = 2.0;
 
         behavior = {
           lock = {
-            timeout = 1800;  # 30 min
-            action  = "lock";
+            timeout = 1800; # 30 min
+            action = "lock";
           };
           screen-off = {
-            timeout = 2700;  # 45 min total (15 min after lock)
-            action  = "screen_off";
+            timeout = 2700; # 45 min total (15 min after lock)
+            action = "screen_off";
           };
-          suspend.enabled = false;  # no suspend on idle
+          suspend.enabled = false; # no suspend on idle
         };
       };
 
       # -- Lock screen --
       lockscreen = {
-        enabled             = true;
+        enabled = true;
         lock_before_suspend = true;
-        fingerprint         = true;
-        blurred_desktop     = false;
-        blur_intensity      = 0.5;
-        tint_intensity      = 0.3;
+        fingerprint = true;
+        blurred_desktop = false;
+        blur_intensity = 0.5;
+        tint_intensity = 0.3;
       };
 
       # -- Weather --
@@ -181,6 +210,5 @@
       };
     };
   };
-
 
 }

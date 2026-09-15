@@ -136,6 +136,8 @@ in
     inkscape
     ladybird
     libation
+    obs-studio
+    obs-studio-plugins.wlrobs
     obsidian
     openscad
     orca-slicer
