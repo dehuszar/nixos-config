@@ -20,6 +20,13 @@ let
     ];
     text = ''
       set -euo pipefail
+
+      # Ensure we have an authenticated pass-cli session
+      if ! pass-cli info >/dev/null 2>&1; then
+        echo "No active pass-cli session. Logging in..."
+        pass-cli login --interactive
+      fi
+
       NAME="$1"
       shift
 
