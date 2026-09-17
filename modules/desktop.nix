@@ -68,6 +68,7 @@
     slurp
     tuigreet
     wayfreeze
+    wev
     wiremix
     wl-clip-persist
     wl-clipboard
