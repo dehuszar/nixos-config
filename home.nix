@@ -155,6 +155,7 @@ in
     proton-vpn-cli
     protonmail-desktop
     rclone
+    signal-desktop
     simple-scan
     thorium-reader
     unzip
