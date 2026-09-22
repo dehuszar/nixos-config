@@ -6,6 +6,7 @@
   pkgs,
   config,
   lib,
+  inputs,
   ...
 }:
 let
@@ -88,9 +89,16 @@ let
       # --- VST3, CLAP, and FX plugin bundles (at zip root, outside Rack2Pro/) ---
       mkdir -p $out/share/{clap,vst3}
 
-      # CLAP
-      if [ -f "VCV Rack 2.clap" ]; then
+      # CLAP — can be either a directory bundle or a single .so file
+      if [ -d "VCV Rack 2.clap" ]; then
         cp -r "VCV Rack 2.clap" $out/share/clap/
+        CLAP_SO=$(find "$out/share/clap/VCV Rack 2.clap" -name '*.so' -type f | head -1)
+        if [ -n "$CLAP_SO" ]; then
+          patchelf --add-rpath "$out/opt/vcvrack-pro" "$CLAP_SO"
+        fi
+      elif [ -f "VCV Rack 2.clap" ]; then
+        cp "VCV Rack 2.clap" $out/share/clap/
+        patchelf --add-rpath "$out/opt/vcvrack-pro" "$out/share/clap/VCV Rack 2.clap"
       fi
 
       # VST3 (directory bundle)
@@ -356,21 +364,140 @@ let
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/bitwig-studio \
-        --set RACK_SYSTEM_DIR "${vcvrack-pro}/opt/vcvrack-pro"
+        --set RACK_SYSTEM_DIR "${vcvrack-pro}/opt/vcvrack-pro" \
+        --prefix LD_LIBRARY_PATH : "${vcvrack-pro}/opt/vcvrack-pro" \
+        --prefix LD_LIBRARY_PATH : "${pkgs.yabridge}/lib"
+    '';
+  };
+
+  # --- yabridge-bottles-wineloader ---
+  # Wraps the upstream wineloader.sh but uses wine64 instead of wine because
+  # kron4ek runners ship a 32-bit `wine` dispatcher that can't run on NixOS
+  # (no /lib/ld-linux.so.2).  See:
+  # https://github.com/microfortnight/yabridge-bottles-wineloader
+  wineloader-src = inputs.yabridge-bottles-wineloader;
+
+  wineloader = pkgs.writeShellApplication {
+    name = "wineloader.sh";
+    runtimeInputs = [ pkgs.yq ];
+    text = ''
+      YQ=$(command -v yq)
+      if [ -z "$YQ" ]; then
+        echo "Error: yq is not installed." >&2
+        exit 1
+      fi
+
+      SYSTEM_WINE=$(command -v wine64 || true)
+
+      call_system_wine() {
+          if [ -n "$SYSTEM_WINE" ]; then
+              exec "$SYSTEM_WINE" "$@"
+          else
+              echo "Error: system wine64 is not installed." >&2
+              exit 1
+          fi
+      }
+
+      # Executes a wine64 binary from a Bottles runner, ensuring
+      # LD_LIBRARY_PATH so it can find its own .so files.
+      exec_runner_wine64() {
+          local wine64_bin="$1"; shift
+          local runner_root
+          # Walk up from wine64's parent dir until we find the runner root
+          # (the directory that contains bin/wineserver).
+          runner_root="$(cd "$(dirname "$(dirname "$wine64_bin")")" && pwd)"
+          while [[ ! -f "$runner_root/bin/wineserver" && "$runner_root" != "/" ]]; do
+              runner_root="$(dirname "$runner_root")"
+          done
+
+          export LD_LIBRARY_PATH="\
+$runner_root/lib/wine/x86_64-unix:\
+$runner_root/lib64:\
+$runner_root/lib:\
+$LD_LIBRARY_PATH"
+          exec "$wine64_bin" "$@"
+      }
+
+      resolve_custom_bottles_root() {
+          yq -r '.custom_bottles_path // ""' "$1" 2>/dev/null || echo ""
+      }
+
+      bottle_path_exists() {
+          [[ -n "$1" && -d "$1/$2" ]]
+      }
+
+      # Looks for wine64 across common runner layouts.
+      # Prints the path if found; returns 1 otherwise.
+      find_wine64() {
+          local bottles_root="$1" runner="$2" candidate
+          for candidate in \
+              "$bottles_root/runners/$runner/files/bin/wine64" \
+              "$bottles_root/runners/$runner/dist/bin/wine64" \
+              "$bottles_root/runners/$runner/bin/wine64" \
+              "$bottles_root/runners/$runner/lib/wine/x86_64-unix/wine64"
+          do
+              if [[ -x "$candidate" ]]; then
+                  echo "$candidate"
+                  return 0
+              fi
+          done
+          return 1
+      }
+
+      if [[ -e "''${WINEPREFIX}/bottle.yml" ]]; then
+          RUNNER=$(yq -r ".Runner" "''${WINEPREFIX}/bottle.yml")
+          BOTTLE_PATH=$(yq -r ".Path" "''${WINEPREFIX}/bottle.yml")
+          BOTTLE_PATH=$(basename "$BOTTLE_PATH")
+
+          if [[ -e "$HOME/.var/app/com.usebottles.bottles/data/bottles/data.yml" ]]; then
+              IS_FLATPAK=true
+              CUSTOM_BOTTLES_PATH=$(resolve_custom_bottles_root "$HOME/.var/app/com.usebottles.bottles/data/bottles/data.yml")
+          elif [[ -e "$HOME/.local/share/bottles/data.yml" ]]; then
+              IS_FLATPAK=false
+              CUSTOM_BOTTLES_PATH=$(resolve_custom_bottles_root "$HOME/.local/share/bottles/data.yml")
+          else
+              CUSTOM_BOTTLES_PATH=""
+              IS_FLATPAK=false
+          fi
+
+          if [[ "$IS_FLATPAK" == true ]] && bottle_path_exists "$CUSTOM_BOTTLES_PATH" "$BOTTLE_PATH"; then
+              BOTTLES_ROOT="$HOME/.var/app/com.usebottles.bottles/data/bottles/"
+          elif [[ "$IS_FLATPAK" == false ]] && bottle_path_exists "$CUSTOM_BOTTLES_PATH" "$BOTTLE_PATH"; then
+              BOTTLES_ROOT="$HOME/.local/share/bottles"
+          elif bottle_path_exists "$HOME/.var/app/com.usebottles.bottles/data/bottles/bottles" "$BOTTLE_PATH"; then
+              BOTTLES_ROOT="$HOME/.var/app/com.usebottles.bottles/data/bottles/"
+          elif bottle_path_exists "$HOME/.local/share/bottles/bottles" "$BOTTLE_PATH"; then
+              BOTTLES_ROOT="$HOME/.local/share/bottles"
+          else
+              echo "Error: BOTTLES_ROOT not found." >&2
+              exit 1
+          fi
+
+          if [[ -z "$RUNNER" || "$RUNNER" == sys-* ]]; then
+              call_system_wine "$@"
+          else
+              WINE64_BIN=$(find_wine64 "$BOTTLES_ROOT" "$RUNNER") || {
+                  echo "Error: wine64 not found for runner '$RUNNER' in $BOTTLES_ROOT/runners/" >&2
+                  exit 1
+              }
+              exec_runner_wine64 "$WINE64_BIN" "$@"
+          fi
+      else
+          call_system_wine "$@"
+      fi
     '';
   };
 in
 {
-
   home.packages = [
     bottles-overridden
     pianoteq
     bitwig-studio-wrapped
     pkgs.neural-amp-modeler-lv2
-    pkgs.yabridge
     pkgs.yabridgectl
     stemdeck
     vcvrack-pro
+    wineloader
   ];
 
   xdg.desktopEntries.stemdeck = {
@@ -424,5 +551,48 @@ in
     ".clap/VCV Rack 2.clap".source = "${vcvrack-pro}/share/clap/VCV Rack 2.clap";
     ".vst3/VCV Rack 2.vst3".source = "${vcvrack-pro}/share/vst3/VCV Rack 2.vst3";
     ".vst3/Pianoteq 9.vst3".source = "${pianoteq}/share/vst3/Pianoteq 9.vst3";
+
+    # yabridge-bottles-wineloader: the config file sets
+    # WINELOADER=$HOME/.local/bin/wineloader.sh, so that path must exist.
+    ".local/bin/wineloader.sh" = {
+      source = "${wineloader}/bin/wineloader.sh";
+      executable = true;
+    };
+
+    # Symlink yabridge chainloaders into ~/.local/share/yabridge/ so
+    # yabridgctl can find them (it scans this directory by default).
+    # Note: nixpkgs puts the .so files directly in $out/lib/, not $out/lib/yabridge/.
+    ".local/share/yabridge/libyabridge-chainloader-vst2.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-chainloader-vst2.so";
+    ".local/share/yabridge/libyabridge-chainloader-vst3.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-chainloader-vst3.so";
+    ".local/share/yabridge/libyabridge-chainloader-clap.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-chainloader-clap.so";
+
+    # The actual plugin libraries that the chainloaders dlopen().
+    # The chainloader searches for these next to yabridge-host.exe.
+    ".local/share/yabridge/libyabridge-vst2.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-vst2.so";
+    ".local/share/yabridge/libyabridge-vst3.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-vst3.so";
+    ".local/share/yabridge/libyabridge-clap.so".source =
+      "${pkgs.yabridge}/lib/libyabridge-clap.so";
+
+    # WINE-side host executables for Windows VST bridging.
+    ".local/share/yabridge/yabridge-host.exe".source =
+      "${pkgs.yabridge}/bin/yabridge-host.exe";
+    ".local/share/yabridge/yabridge-host.exe.so".source =
+      "${pkgs.yabridge}/bin/yabridge-host.exe.so";
+  };
+
+  # Tell yabridge to use wineloader instead of system WINE so it picks up
+  # Bottles runners (Proton, Kron4ek, etc.).
+  xdg.configFile."environment.d/wineloader.conf".source = "${wineloader-src}/wineloader.conf";
+
+  # Export WINELOADER so yabridge (and other tools) can find the wineloader wrapper.
+  # WINEPREFIX tells wineloader.sh which Bottles prefix to use for yabridge-host.
+  home.sessionVariables = {
+    WINELOADER = "$HOME/.local/bin/wineloader.sh";
+    WINEPREFIX = "$HOME/.local/share/bottles/bottles/VST-Plugins-Default";
   };
 }

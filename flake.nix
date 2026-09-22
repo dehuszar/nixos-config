@@ -16,6 +16,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    yabridge-bottles-wineloader = {
+      url = "path:/home/sam/nix/nix-flakes/yabridge-bottles-wineloader";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixvim = {
       url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -58,6 +63,7 @@
       mangowm,
       quickshell,
       noctalia,
+      yabridge-bottles-wineloader,
       nixvim,
       disko,
       brother-mfc9970cdw,
