@@ -16,8 +16,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    yabridge-bottles-wineloader = {
-      url = "path:/home/sam/nix/nix-flakes/yabridge-bottles-wineloader";
+    recording = {
+      url = "path:/home/sam/nix/nix-flakes/nixos-recording";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -63,7 +63,7 @@
       mangowm,
       quickshell,
       noctalia,
-      yabridge-bottles-wineloader,
+      recording,
       nixvim,
       disko,
       brother-mfc9970cdw,
@@ -102,12 +102,18 @@
               home-manager.extraSpecialArgs = {
                 inherit inputs isVM;
               };
-              home-manager.users.sam = ./home.nix;
+              home-manager.users.sam = {
+                imports = [
+                  ./home.nix
+                  recording.homeManagerModules.default
+                ];
+              };
             }
             mangowm.nixosModules.mango
             noctalia.nixosModules.default
             nixos-devtools.nixosModules.default
             brother-mfc9970cdw.nixosModules.default
+            recording.nixosModules.default
             # lanzaboote.nixosModules.lanzaboote   # uncomment with the input above for Secure Boot
           ]
           ++ privateModules

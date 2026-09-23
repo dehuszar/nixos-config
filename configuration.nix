@@ -58,27 +58,6 @@
     "flakes"
   ];
   powerManagement.enable = true;
-  programs.dconf.enable = true;
-  programs.nix-ld.enable = true;
-  programs.nix-ld.libraries = with pkgs; [
-    # Include libraries the Wine runner may need
-    stdenv.cc.cc.lib
-    glib
-    zlib
-    libudev0-shim # if your runner needs udev
-    # Add more as needed from wine's ldd output
-  ];
-
-  # Provide the 32-bit ELF dynamic linker for Wine's WoW64 subsystem.
-  # Wine invokes /lib/ld-linux.so.2 directly to discover 32-bit Unix
-  # library dependencies, even when running 64-bit Windows executables.
-  system.activationScripts.ld-linux-32 = {
-    deps = [];
-    text = ''
-      mkdir -p /lib
-      ln -sfn ${pkgs.pkgsi686Linux.glibc}/lib/ld-linux.so.2 /lib/ld-linux.so.2
-    '';
-  };
   programs.steam.enable = true;
 
   services.avahi = {

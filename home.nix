@@ -111,7 +111,6 @@ let
 in
 {
   imports = [
-    ./modules/home/recording.nix
     ./modules/home/mango.nix
     ./modules/home/noctalia-shell.nix
     ./modules/home/vm-resize.nix
