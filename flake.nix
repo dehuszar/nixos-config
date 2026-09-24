@@ -46,6 +46,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    mpv-mpris = {
+      url = "path:/home/sam/nix/nix-flakes/mpv-mpris";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -69,6 +74,7 @@
       brother-mfc9970cdw,
       hashistack,
       nixos-devtools,
+      mpv-mpris,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -94,6 +100,7 @@
           inherit system;
           specialArgs = { inherit isVM; };
           modules = [
+            { nixpkgs.overlays = [ mpv-mpris.overlays.default ]; }
             ./configuration.nix
             home-manager.nixosModules.home-manager
             {

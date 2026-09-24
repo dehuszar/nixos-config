@@ -140,8 +140,10 @@ in
     gimp
     impala
     inkscape
-    ladybird
+    # ladybird
     libation
+    mpv
+    mpv-mpris
     obs-studio
     obs-studio-plugins.wlrobs
     obsidian
@@ -153,11 +155,13 @@ in
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
+    libqalculate
     rclone
     signal-desktop
     simple-scan
     thorium-reader
     unzip
+    yt-dlp
   ];
 
   fonts.fontconfig.enable = true;

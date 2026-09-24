@@ -120,7 +120,7 @@
 
       # -- Shell --
       shell = {
-        font = "JetBrainsMono Nerd Font";
+        font_family = "JetBrainsMono Nerd Font";
         settings_show_advanced = true;
         telemetry_enabled = true;
 
