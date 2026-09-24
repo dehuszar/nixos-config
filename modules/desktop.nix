@@ -19,7 +19,10 @@
     enable = true;
     settings = {
       initial_session = {
-        command = "mango";
+        # Wrap with systemd-cat so stdout/stderr is captured by journald.
+        # Without this, Mango's logs are lost when launched via greetd's PAM
+        # session (bypasses systemd user services entirely).
+        command = "${pkgs.systemd}/bin/systemd-cat -t mango -p info mango";
         user = "sam"; # auto-login on first start, no password required
       };
     };
