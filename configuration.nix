@@ -74,7 +74,7 @@
   services.printing = {
     enable = true;
   };
-
+  services.udisks2.enable = true;
   services.udev.extraRules = ''
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="keymapp", MODE="0660"
   '';
