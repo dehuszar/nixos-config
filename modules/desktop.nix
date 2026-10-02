@@ -54,6 +54,7 @@
 
   environment.systemPackages = with pkgs; [
     baobab
+    bibata-cursors
     btop
     cliphist
     ddcutil

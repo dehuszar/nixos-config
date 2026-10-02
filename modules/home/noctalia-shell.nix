@@ -4,15 +4,12 @@
 # Provides a sleek, customizable desktop shell for Wayland compositors.
 # Replaces quickshell as the shell layer around MangoWM.
 {
-  inputs,
   config,
   lib,
   pkgs,
   ...
 }:
 {
-  imports = [ inputs.noctalia.homeModules.default ];
-
   # -- Obsidian theme template --
   # Declaratively manage the Obsidian template input file and config.
   # Noctalia's template engine renders obsidian.css into the vault's

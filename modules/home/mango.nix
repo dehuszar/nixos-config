@@ -17,7 +17,10 @@
     enable = true;
     extraConfig = "";
     settings = {
-      env = [ ];
+      env = [
+        "XCURSOR_THEME,Bibata-Modern-Ice"
+        "XCURSOR_SIZE,24"
+      ];
       exec-once = [
         "noctalia"
       ];
