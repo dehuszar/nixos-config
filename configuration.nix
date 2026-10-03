@@ -66,6 +66,20 @@
     nssmdns4 = true;
     openFirewall = true;
   };
+
+  # Real-time audio: rtkit manages memlock limits and RT scheduling for
+  # PipeWire/JACK clients, preventing audio dropouts from swap activity.
+  security.rtkit.enable = true;
+
+  # Enable PipeWire as the system sound server (not just the package).
+  # This also enables the JACK compatibility layer by default.
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+  };
   services.ipp-usb.enable = true;
   services.logind.settings.Login.HandleLidSwitch = "suspend";
   services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
@@ -85,8 +99,9 @@
   users.users.sam = {
     isNormalUser = true;
     # 'wheel' for sudo; 'video'/'input' for DRM & input device access;
-    # 'seat' for the seatd socket.
+    # 'seat' for the seatd socket; 'audio' for real-time audio devices.
     extraGroups = [
+      "audio"
       "keymapp"
       "wheel"
       "video"
