@@ -374,8 +374,8 @@
         ]
       },
       "locked": {
-        "lastModified": 1791052998,
-        "narHash": "sha256-bjqSsx2s1igP20MqTkLh1FpCAytzqV/QBcrUAgzBChA=",
+        "lastModified": 1791062368,
+        "narHash": "sha256-gxars4IgFseCfzg+3iRH8o5ikC+WkNqbU/Q9+2Qk8V4=",
         "path": "/home/sam/nix/nix-flakes/nixos-recording",
         "type": "path"
       },
