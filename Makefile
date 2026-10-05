@@ -1,7 +1,7 @@
 build:
-	nix build --impure .#nixosConfigurations.hostname.config.system.build.toplevel
+	nix build --impure .#nixosConfigurations.creation-station.config.system.build.toplevel
 switch:
-	sudo -E HOME=$(HOME) nixos-rebuild switch --impure --flake .#hostname
+	sudo -E HOME=$(HOME) nixos-rebuild switch --impure --flake .#creation-station
 build-vm:
 	nix build --impure .#nixosConfigurations.vm.config.system.build.vm
 check:

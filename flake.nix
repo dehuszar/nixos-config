@@ -54,7 +54,7 @@
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
-    #   nix flake lock ; sudo nixos-rebuild switch --flake .#hostname
+    #   nix flake lock ; sudo nixos-rebuild switch --flake .#creation-station
     # lanzaboote = {
     #   url = "github:nix-community/lanzaboote";
     #   inputs.nixpkgs.follows = "nixpkgs";
@@ -132,7 +132,7 @@
         # Real hardware (this machine / bootstrap target): no VM workarounds.
         # Disk layout is declared via disko (modules/disko.nix) so no
         # hardware-configuration.nix placeholder is needed.
-        hostname = mkNixos {
+        creation-station = mkNixos {
           isVM = false;
           extraModules = [
             disko.nixosModules.disko
