@@ -13,6 +13,6 @@ result-*
 modules/home/quickshell-reference/
 
 # Proprietary binaries (downloaded manually)
-sources/*.tar.xz
-sources/*.zip
+sources/*
+!sources/README.md
 *.ptq
