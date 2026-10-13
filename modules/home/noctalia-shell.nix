@@ -32,6 +32,10 @@
     systemd.enable = true;
 
     settings = {
+      # When running via systemd user service, apps launched by Noctalia
+      # must also be systemd-scoped or they get killed on service restart.
+      launch_apps_as_systemd_services = true;
+
       # -- Bar --
       bar = {
         default = {

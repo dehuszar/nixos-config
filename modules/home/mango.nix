@@ -21,9 +21,6 @@
         "XCURSOR_THEME,Bibata-Modern-Ice"
         "XCURSOR_SIZE,24"
       ];
-      exec-once = [
-        "noctalia"
-      ];
       # All bindings, blur, shadows, window rules, etc. live in this file —
       # editable without a Nix rebuild.  Reload with Super+Shift+R or let
       # the config watcher pick up changes automatically.
@@ -59,7 +56,7 @@
   # store) so the config watcher sees mtime changes when you edit the repo
   # copy.  The watcher polls ~/.config/mango/mango.conf and runs
   # `mmsg dispatch reload_config`.
-  home.activation.mango-conf-symlink = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  home.activation.mango-conf-symlink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
   '';
 
