@@ -34,6 +34,7 @@
     gdb
     git
     gnumake
+    iw
     jq
     kdePackages.qt5compat
     nss
@@ -49,6 +50,8 @@
 
   networking.hostName = "creation-station";
   networking.networkmanager.enable = true;
+  networking.networkmanager.wifi.backend = "iwd";
+  networking.wireless.iwd.settings.General.Country = "US";
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.permittedInsecurePackages = [
@@ -83,8 +86,7 @@
   services.ipp-usb.enable = true;
   services.logind.settings.Login.HandleLidSwitch = "suspend";
   services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
-  services.logind.settings.Login.HandleLidSwitchExternalPower =
-    "suspendpowerManagement.enable = true;powerManagement.enable = true;";
+  services.logind.settings.Login.HandleLidSwitchExternalPower = "suspend";
   services.printing = {
     enable = true;
   };
