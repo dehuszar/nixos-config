@@ -19,7 +19,7 @@
     settings = {
       env = [
         "XCURSOR_THEME,Bibata-Modern-Ice"
-        "XCURSOR_SIZE,24"
+        "XCURSOR_SIZE,32"
       ];
       # All bindings, blur, shadows, window rules, etc. live in this file —
       # editable without a Nix rebuild.  Reload with Super+Shift+R or let
