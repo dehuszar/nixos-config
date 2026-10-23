@@ -11,8 +11,8 @@
       url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    noctalia = {
-      url = "github:noctalia-dev/noctalia";
+    mangobar = {
+      url = "github:mangowm/mangobar";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -67,7 +67,7 @@
       home-manager,
       mangowm,
       quickshell,
-      noctalia,
+      mangobar,
       recording,
       nixvim,
       disko,
@@ -100,7 +100,20 @@
           inherit system;
           specialArgs = { inherit isVM; };
           modules = [
-            { nixpkgs.overlays = [ mpv-mpris.overlays.default ]; }
+            {
+              nixpkgs.overlays = [
+                mpv-mpris.overlays.default
+                (final: prev: {
+                  python3Packages = prev.python3Packages.override {
+                    overrides = self: super: {
+                      diff-cover = super.diff-cover.overridePythonAttrs (_: {
+                        doCheck = false;
+                      });
+                    };
+                  };
+                })
+              ];
+            }
             ./configuration.nix
             home-manager.nixosModules.home-manager
             {
@@ -113,11 +126,11 @@
                 imports = [
                   ./home.nix
                   recording.homeManagerModules.default
+                  mangobar.homeManagerModules.default
                 ];
               };
             }
             mangowm.nixosModules.mango
-            noctalia.nixosModules.default
             nixos-devtools.nixosModules.default
             brother-mfc9970cdw.nixosModules.default
             recording.nixosModules.default

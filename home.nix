@@ -17,9 +17,22 @@ let
     runtimeInputs = [
       pkgs.proton-pass-cli
       pkgs.docker-sbx
+      pkgs.jq
+      pkgs.gnused
     ];
     text = ''
-      set -euo pipefail
+      # Usage: pi-sbx.sh SANDBOX_NAME [WORKDIR] [extra sbx args...]
+      # (writeShellApplication already sets errexit/nounset/pipefail)
+
+      if [ "$#" -lt 1 ]; then
+        echo "usage: pi-sbx.sh SANDBOX_NAME [WORKDIR] [extra sbx args...]" >&2
+        exit 1
+      fi
+      NAME="$1"
+      shift
+
+      WORKDIR="''${1:-.}"
+      if [ "$#" -gt 0 ]; then shift; fi
 
       # Ensure we have an authenticated pass-cli session
       if ! pass-cli info >/dev/null 2>&1; then
@@ -27,13 +40,14 @@ let
         pass-cli login --interactive
       fi
 
-      NAME="$1"
-      shift
-
       # Fetch secrets from pass-cli
       PASS_ITEM=$(pass-cli item view --vault-name Personal --item-title "Lemonade AI API Key" --output json)
 
       LEMONADE_API_KEY=$(echo "$PASS_ITEM" | jq -r '.item.content.content.Login.password')
+      if [ -z "$LEMONADE_API_KEY" ] || [ "$LEMONADE_API_KEY" = "null" ]; then
+        echo "error: could not read API key from pass item" >&2
+        exit 1
+      fi
 
       # Extract URLs — adjust selectors if your pass-cli output structure differs
       LEMONADE_API_DOMAIN_REMOTE=$(echo "$PASS_ITEM" \
@@ -44,15 +58,22 @@ let
         | jq -r '.item.content.content.Login.urls[] | select(contains("192.168"))' \
         | sed 's|/$||')/v1
 
+      # docker-sbx v0.48.0 broke positional-arg volume mounting; workdir
+      # is now derived from the cwd.
+      cd "$WORKDIR"
+
       echo "Starting sandbox with lemonade AI providers..."
       echo "  Remote: $LEMONADE_API_DOMAIN_REMOTE"
       echo "  Local:  $LEMONADE_API_DOMAIN_LOCAL"
 
-      sbx run \
+      # The kit extends the shell sandbox template, so pi is started by
+      # handing -c pi to the in-sandbox shell after "--". The kit dir is
+      # the first positional (sbx 0.48.0: --kit only accepts mixins).
+      sbx run "$HOME/sbx-shell-pi" \
+        --name "$NAME" \
         -e LEMONADE_API_KEY="$LEMONADE_API_KEY" \
         -e LEMONADE_API_DOMAIN_REMOTE="$LEMONADE_API_DOMAIN_REMOTE" \
         -e LEMONADE_API_DOMAIN_LOCAL="$LEMONADE_API_DOMAIN_LOCAL" \
-        --name "$NAME" --kit ~/sbx-shell-pi \
         "$@" -- -c "pi"
     '';
   };
@@ -112,7 +133,7 @@ in
 {
   imports = [
     ./modules/home/mango.nix
-    ./modules/home/noctalia-shell.nix
+    ./modules/home/mangobar.nix
     ./modules/home/vm-resize.nix
     inputs.hashistack.homeManagerModules.controller
     inputs.nixos-devtools.homeManagerModules.dev
@@ -190,7 +211,7 @@ in
   # Reload Mango config automatically after home-manager switch
   home.activation = {
     reloadMango = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD noctalia msg config-reload 2>/dev/null || true
+      $DRY_RUN_CMD systemctl --user restart mangobar.service 2>/dev/null || true
     '';
   };
 
