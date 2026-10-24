@@ -1,34 +1,54 @@
 #!/usr/bin/env bash
 # ~/.local/bin/mango-config-watcher
 #
-# Polls ~/.config/mango/*.conf for changes (mtime-based).
-# When any file is modified, triggers `mmsg dispatch reload_config`.
+# Polls ~/.config/mango/*.conf and ~/.config/mangobar/* for changes
+# (mtime-based).  When any file is modified, triggers the appropriate
+# reload (`mmsg dispatch reload_config` for mango, systemd restart
+# for mangobar).
 # Designed to run as a systemd user service alongside mangowm.
 
-CONFIG_DIR="$HOME/.config/mango"
+MANGO_CONFIG_DIR="$HOME/.config/mango"
+MANGOBAR_CONFIG_DIR="$HOME/.config/mangobar"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/mango-watcher"
-STATE_FILE="$STATE_DIR/mtimes"
+MANGO_STATE_FILE="$STATE_DIR/mtimes"
+MANGOBAR_STATE_FILE="$STATE_DIR/mangobar-mtimes"
 POLL_INTERVAL=1
 
 mkdir -p "$STATE_DIR"
 
-# Snapshot: build "path mtime" lines for all .conf files
-snapshot() {
-  find -L "$CONFIG_DIR" -maxdepth 1 -name '*.conf' -printf '%p %T@\n' 2>/dev/null | sort
+# Snapshots: build "path mtime" lines for monitored files
+mango_snapshot() {
+  find -L "$MANGO_CONFIG_DIR" -maxdepth 1 -name '*.conf' -printf '%p %T@\n' 2>/dev/null | sort
 }
 
-# First run: take initial snapshot and wait
-snapshot > "$STATE_FILE"
+mangobar_snapshot() {
+  find -L "$MANGOBAR_CONFIG_DIR" -maxdepth 1 \( -name '*.jsonc' -o -name '*.css' \) -printf '%p %T@\n' 2>/dev/null | sort
+}
+
+# First run: take initial snapshots and wait
+mango_snapshot > "$MANGO_STATE_FILE"
+mangobar_snapshot > "$MANGOBAR_STATE_FILE"
 sleep "$POLL_INTERVAL"
 
 while true; do
-  current="$(snapshot)"
-  previous="$(cat "$STATE_FILE" 2>/dev/null)"
+  # -- mango --
+  current_mango="$(mango_snapshot)"
+  previous_mango="$(cat "$MANGO_STATE_FILE" 2>/dev/null)"
 
-  if [ "$current" != "$previous" ]; then
-    echo "$(date '+%F %T') config change detected — reloading"
+  if [ "$current_mango" != "$previous_mango" ]; then
+    echo "$(date '+%F %T') mango config change detected — reloading"
     mmsg dispatch reload_config 2>/dev/null || true
-    echo "$current" > "$STATE_FILE"
+    echo "$current_mango" > "$MANGO_STATE_FILE"
+  fi
+
+  # -- mangobar --
+  current_mangobar="$(mangobar_snapshot)"
+  previous_mangobar="$(cat "$MANGOBAR_STATE_FILE" 2>/dev/null)"
+
+  if [ "$current_mangobar" != "$previous_mangobar" ]; then
+    echo "$(date '+%F %T') mangobar config change detected — restarting"
+    systemctl --user restart mangobar.service 2>/dev/null || true
+    echo "$current_mangobar" > "$MANGOBAR_STATE_FILE"
   fi
 
   sleep "$POLL_INTERVAL"

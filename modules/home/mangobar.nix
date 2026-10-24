@@ -15,9 +15,6 @@
   services.mangobar = {
     enable = true;
     systemdTarget = "mango.target";
-
-    # Point mangobar at the symlinked config outside the Nix store.
-    configFile = "$HOME/.config/mangobar/config.jsonc";
   };
 
   # Nerd Font so icon glyphs render in mangobar.

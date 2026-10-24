@@ -1,78 +1,97 @@
 // mangobar config — editable in-place, no rebuild needed.
 // Reload with: systemctl --user restart mangobar.service
 {
-    "layer": "top",
-    "height": 30,
-    "buffer-scale": 1,
-
-    "modules-left": [
-        "workspaces",
-        "layout",
-        "window"
+  "layer": "top",
+  "height": 30,
+  "buffer-scale": 1,
+  "modules-left": [
+    "workspaces",
+    "layout"
+    // "window"
+  ],
+  "modules-center": [
+    "clock#date",
+    "clock#time"
+  ],
+  "modules-right": [
+    "network",
+    "cpu",
+    "memory",
+    "pulseaudio",
+    "battery",
+    "custom/power"
+  ],
+  "workspaces": {
+    "hide-empty": true,
+    "overview-label": "OVERVIEW",
+    "on-click": "activate",
+    "on-click-right": "toggle"
+  },
+  "layout": {
+    "format": "{}"
+  },
+  "window": {
+    "format": "{}"
+  },
+  "network": {
+    "format": "{icon}", // {ifname}
+    "format-wifi": "{signal} {ssid}",
+    "format-disconnected": "{icon}",
+    "icon-wifi": "󰖩",
+    "icon-ethernet": "󰈀",
+    "icon-disconnected": "󰖪",
+    "signal-icons": [
+      "󰤯",
+      "󰤟",
+      "󰤢",
+      "󰤥",
+      "󰤨"
     ],
-    "modules-center": [],
-    "modules-right": [
-        "network",
-        "cpu",
-        "memory",
-        "pulseaudio",
-        "battery",
-        "clock#date",
-        "clock#time"
+    // "format-alt": "↓{down} ↑{up}",
+    "on-click": "impala"
+  },
+  "cpu": {
+    "format": " {load}%"
+  },
+  "memory": {
+    "format": " {}%"
+  },
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰖁 muted",
+    "icons": [
+      "󰖁",
+      "󰕿",
+      "󰕾"
     ],
-
-    "workspaces": {
-        "hide-empty": true,
-        "overview-label": "OVERVIEW",
-        "on-click": "activate",
-        "on-click-right": "toggle"
-    },
-
-    "layout": {
-        "format": "{}"
-    },
-
-    "window": {
-        "format": "{}"
-    },
-
-    "network": {
-        "format": "{icon} {ifname}",
-        "format-wifi": "{signal} {ssid}",
-        "format-disconnected": "{icon}",
-        "icon-wifi": "󰖩",
-        "icon-ethernet": "󰈀",
-        "icon-disconnected": "󰖪",
-        "signal-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
-        "format-alt": "↓{down} ↑{up}"
-    },
-
-    "cpu": {
-        "format": " {load}%"
-    },
-
-    "memory": {
-        "format": " {}%"
-    },
-
-    "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-muted": "󰖁 muted",
-        "icons": ["󰖁", "󰕿", "󰕾"],
-        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
-        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-    },
-
-    "battery": {
-        "format": "{icon} {percent}%",
-        "icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
-    },
-
-    "clock#date": {
-        "format": "{:%A, %B %d}"
-    },
-
-    "clock#time": {
-        "format": "{:%I:%M %p}"
-    }
+    "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+  },
+  "battery": {
+    "format": "{icon} {percent}%",
+    "icons": [
+      "󰂎",
+      "󰁺",
+      "󰁻",
+      "󰁼",
+      "󰁽",
+      "󰁾",
+      "󰁿",
+      "󰂀",
+      "󰂁",
+      "󰂂",
+      "󰁹"
+    ]
+  },
+  "clock#date": {
+    "format": " %A, %B %d"
+  },
+  "clock#time": {
+    "format": "%I:%M %p"
+  },
+  "custom/power": {
+    "format": "",
+    "on-click": "wlogout -C ~/.config/mango/wlogout/style.css -l ~/.config/mango/wlogout/layout -b 6 --protocol layer-shell",
+    "on-click-right": "sleep 0.1s && swaync-client -t -sw"
+  }
 }

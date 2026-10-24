@@ -107,3 +107,10 @@
     background-color: #45475a;
     padding: 0px 12px;
 }
+
+/* Power button */
+#custom-power {
+    margin: 0px 5px;
+    background-color: #f38ba8;
+    color: #1e1e2e;
+}
