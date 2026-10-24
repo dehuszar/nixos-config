@@ -1,0 +1,109 @@
+/* =========================================================
+ * mangobar style — editable in-place, no rebuild needed.
+ * Reload with: systemctl --user restart mangobar.service
+ * ========================================================= */
+
+/* ==================== Font ==================== */
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 16px;
+    font-weight: normal;
+    color: #cdd6f4;
+    background-color: #1e1e2e;
+    padding: 0px 10px;
+    margin: 4px 1px;
+    border-radius: 6px;
+}
+
+#bar {
+    background: none;
+    margin: 4px 10px;
+}
+#bar.sel {
+    background: none;
+}
+
+/* Tags / workspaces */
+#tags {
+    padding: 0px 13px;
+    margin: 0px 2px;
+}
+#tags.active {
+    background-color: #89b4fa;
+    color: #1e1e2e;
+}
+#tags.occupied {
+    background-color: #585b70;
+    color: #cdd6f4;
+}
+#tags.urgent {
+    background-color: #f38ba8;
+    color: #1e1e2e;
+}
+#tags.empty {
+    background-color: #313244;
+    color: #a6adc8;
+}
+
+/* Layout symbol */
+#layout {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+    min-width: 34px;
+}
+
+/* Window title */
+#title {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+}
+
+/* Clock */
+#clock {
+    background-color: #f9e2af;
+    color: #1e1e2e;
+}
+#clock.date {
+    background-color: #a6e3a1;
+    color: #1e1e2e;
+}
+
+/* System modules */
+#cpu {
+    background-color: #fab387;
+    color: #1e1e2e;
+}
+#mem {
+    background-color: #89b4fa;
+    color: #1e1e2e;
+}
+#volume {
+    background-color: #f5c2e7;
+    color: #1e1e2e;
+}
+#network {
+    background-color: #a6e3a1;
+    color: #1e1e2e;
+}
+#network.wifi {
+    background-color: #89b4fa;
+    color: #1e1e2e;
+}
+#network.ethernet {
+    background-color: #a6e3a1;
+    color: #1e1e2e;
+}
+#network.disconnected {
+    background-color: #f38ba8;
+    color: #1e1e2e;
+}
+#battery {
+    background-color: #f9e2af;
+    color: #1e1e2e;
+}
+
+/* Tray */
+#tray {
+    background-color: #45475a;
+    padding: 0px 12px;
+}
