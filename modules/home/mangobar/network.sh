@@ -1,40 +1,51 @@
 #!/usr/bin/env bash
 # Network status for mangobar custom/network module.
-# Outputs:  "󰤨 MySSID"  |  "󰈀"  |  "󰖩"
+# Outputs signal-strength icon + SSID (wifi), ethernet icon, or disconnected icon.
+# Exit codes: 0 = connected, 1 = disconnected
 
-# Find the interface holding the default route
-iface=$(ip route show default 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+# Signal-strength icons: weakest → strongest (5-step ladder)
+SIG_ICONS=("󰤯" "󰤟" "󰤢" "󰤥" "󰤨")
 
-# If no default route, check for any UP non-loopback interfaces
-if [ -z "$iface" ]; then
-    iface=$(ip -o link show up 2>/dev/null | awk -F': ' '$2 != "lo" {print $2; exit}')
-fi
-
-# No interfaces found at all — just show the wifi icon
-if [ -z "$iface" ]; then
-    echo "󰖩"
-    exit 0
-fi
-
-# Determine connection type
-if [ -d "/sys/class/net/${iface}/wireless" ] || iw dev "$iface" link &>/dev/null; then
-    # WiFi
-    ssid=$(iwgetid -r 2>/dev/null || iw dev "$iface" link 2>/dev/null | awk '/SSID/{print $2}')
-    if [ -n "$ssid" ]; then
-        # Get signal strength
-        signal=$(iw dev "$iface" link 2>/dev/null | awk '/signal:/{print $2}')
-        signal=${signal%%.*}  # strip decimal
-        if   [ "${signal:-0}" -ge 80 ] 2>/dev/null; then icon="󰤨"
-        elif [ "${signal:-0}" -ge 60 ] 2>/dev/null; then icon="󰤥"
-        elif [ "${signal:-0}" -ge 40 ] 2>/dev/null; then icon="󰤢"
-        elif [ "${signal:-0}" -ge 20 ] 2>/dev/null; then icon="󰤟"
-        else icon="󰤯"
-        fi
-        echo "$icon $ssid"
-    else
-        echo "󰖩"
+signal_icon() {
+    local strength="${1:-0}"
+    if   [ "$strength" -ge 80 ] 2>/dev/null; then echo "${SIG_ICONS[4]}"
+    elif [ "$strength" -ge 60 ] 2>/dev/null; then echo "${SIG_ICONS[3]}"
+    elif [ "$strength" -ge 40 ] 2>/dev/null; then echo "${SIG_ICONS[2]}"
+    elif [ "$strength" -ge 20 ] 2>/dev/null; then echo "${SIG_ICONS[1]}"
+    else echo "${SIG_ICONS[0]}"
     fi
-else
-    # Wired
-    echo "󰈀"
+}
+
+# ── Try nmcli (NetworkManager) ─────────────────────────────────────────
+if command -v nmcli &>/dev/null; then
+    # Active connection line: TYPE:DEVICE:STATE
+    line=$(nmcli -t -f TYPE,DEVICE,STATE dev status 2>/dev/null | grep ":connected$" | head -1)
+    conn_type=$(echo "$line" | cut -d: -f1)
+
+    if [ "$conn_type" = "wifi" ]; then
+        ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep "^yes" | cut -d: -f2)
+        signal=$(nmcli -t -f active,SIGNAL dev wifi 2>/dev/null | grep "^yes" | cut -d: -f2 | head -1)
+        icon=$(signal_icon "$signal")
+        echo "$icon"
+        exit 0
+    elif [ -n "$conn_type" ]; then
+        echo "󰈀"
+        exit 0
+    fi
 fi
+
+# ── Fallback: /sys carrier check ───────────────────────────────────────
+for iface in /sys/class/net/*; do
+    [ "$(cat "$iface/carrier" 2>/dev/null)" = "1" ] || continue
+    name=$(basename "$iface")
+    [ "$name" = "lo" ] && continue
+    if [ -d "$iface/wireless" ]; then
+        echo "󰖩 $name"
+    else
+        echo "󰈀"
+    fi
+    exit 0
+done
+
+echo "󰖪"
+exit 1
