@@ -14,7 +14,7 @@
     "clock#time"
   ],
   "modules-right": [
-    "network",
+    "custom/network",
     "cpu",
     "memory",
     "pulseaudio",
@@ -33,22 +33,11 @@
   "window": {
     "format": "{}"
   },
-  "network": {
-    "format": "{icon}", // {ifname}
-    "format-wifi": "{signal} {ssid}",
-    "format-disconnected": "{icon}",
-    "icon-wifi": "󰖩",
-    "icon-ethernet": "󰈀",
-    "icon-disconnected": "󰖪",
-    "signal-icons": [
-      "󰤯",
-      "󰤟",
-      "󰤢",
-      "󰤥",
-      "󰤨"
-    ],
-    // "format-alt": "↓{down} ↑{up}",
-    "on-click": "impala"
+  "custom/network": {
+    "exec": "bash ~/.config/mangobar/network.sh",
+    "interval": 10,
+    "on-click": "ghostty --class=impala --title=impala -e impala",
+    "format": "{}"
   },
   "cpu": {
     "format": " {load}%"

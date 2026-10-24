@@ -29,5 +29,6 @@
     $DRY_RUN_CMD mkdir -p "$HOME/.config/mangobar"
     $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/home/mangobar/config.jsonc" "$HOME/.config/mangobar/config.jsonc"
     $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/home/mangobar/style.css" "$HOME/.config/mangobar/style.css"
+    $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/home/mangobar/network.sh" "$HOME/.config/mangobar/network.sh"
   '';
 }

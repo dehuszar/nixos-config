@@ -50,6 +50,11 @@
     executable = true;
   };
 
+  home.file.".local/bin/mango-network-status" = {
+    source = ../mango/mango-network-status;
+    executable = true;
+  };
+
   # ── Symlink mango.conf so the repo copy is authoritative ──────────────
   # Runs after writeBoundary so it overrides any Nix store symlink created
   # by the upstream mangowm HM module.  Direct symlink (bypasses the Nix
