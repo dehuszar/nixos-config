@@ -15,6 +15,10 @@
       url = "github:mangowm/mangobar";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    wallust = {
+      url = "github:explosion-mental/wallust/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     recording = {
       url = "path:/home/sam/nix/nix-flakes/nixos-recording";
@@ -68,6 +72,7 @@
       mangowm,
       quickshell,
       mangobar,
+      wallust,
       recording,
       nixvim,
       disko,

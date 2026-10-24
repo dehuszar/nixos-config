@@ -134,6 +134,7 @@ in
   imports = [
     ./modules/home/mango.nix
     ./modules/home/mangobar.nix
+    ./modules/home/wallust.nix
     ./modules/home/vm-resize.nix
     inputs.hashistack.homeManagerModules.controller
     inputs.nixos-devtools.homeManagerModules.dev
