@@ -14,11 +14,12 @@
     "clock#time"
   ],
   "modules-right": [
-    "custom/network",
+    "custom/wallpaper",
     "custom/cpu",
+    "custom/network",
+    "custom/bluetooth",
     "pulseaudio",
     "battery",
-    "custom/bluetooth",
     "custom/power"
   ],
   "workspaces": {
@@ -90,5 +91,9 @@
   "custom/bluetooth": {
     "format": "󰂯",
     "on-click": "ghostty --class=bluetui --title=bluetui -e bluetui"
+  },
+  "custom/wallpaper": {
+    "format": "󰸉",
+    "on-click": "waypaper"
   }
 }

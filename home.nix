@@ -185,6 +185,8 @@ in
     thorium-reader
     unzip
     wlogout
+    awww
+    waypaper
     yt-dlp
   ];
 
@@ -237,6 +239,13 @@ in
   xdg.configFile = {
     "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;
   };
+
+  # Symlink waypaper config directly from this repo (not the Nix store)
+  # so that file changes are immediately available without rebuilding.
+  home.activation.symlinkWaypaperConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD mkdir -p "$HOME/.config"
+    $DRY_RUN_CMD ln -sfn /home/sam/nix/nixos-config/modules/home/waypaper "$HOME/.config/waypaper"
+  '';
 
   # Install the pi-sbx wrapper script to ~/.local/bin.
   home.file.".local/bin/pi-sbx.sh".source = "${pi-sbx}/bin/pi-sbx.sh";

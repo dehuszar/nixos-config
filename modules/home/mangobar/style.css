@@ -16,7 +16,7 @@
 }
 
 #bar {
-    background: none;
+    background-color: rgba(0, 0, 0, 0.2);
     margin: 4px 10px;
 }
 #bar.sel {
@@ -78,6 +78,7 @@
     color: #1e1e2e;
 }
 #volume {
+  background-color: none;
     color: #fff;
     margin: 0;
     padding: 0;
@@ -114,15 +115,21 @@
 }
 
 /* Bluetooth button */
-#custom-bluetooth {
+#custom-cpu {
   background-color: none;
-  color: #fff;
-  margin: 0;
+}
+#custom-wallpaper {
+  background-color: none;
+}
+#custom-bluetooth {
+    background-color: none;
+    color: #fff;
+    margin: 0;
 }
 
 /* Power button */
 #custom-power {
     background-color: none;
     color: #fff;
-  margin: 0;
+    margin: 0;
 }
