@@ -8,7 +8,7 @@
     font-family: "JetBrainsMono Nerd Font";
     font-size: 16px;
     font-weight: normal;
-    color: #cdd6f4;
+    color: #91E8FF;
     background-color: none;
     padding: 0px 10px;
     margin: 0;
@@ -16,7 +16,7 @@
 }
 
 #bar {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(127,130,146, 0.2);
     margin: 4px 10px;
 }
 #bar.sel {
@@ -29,8 +29,8 @@
     margin: 0px 2px;
 }
 #tags.active {
-    background-color: #89b4fa;
-    color: #1e1e2e;
+    background-color: #91E8FF;
+    color: #010509;
 }
 #tags.occupied {
     background-color: #585b70;
@@ -47,89 +47,14 @@
 
 /* Layout symbol */
 #layout {
-    background-color: #cba6f7;
-    color: #1e1e2e;
+    background-color: #4F6E96;
+    color: #010509;
     min-width: 34px;
-}
-
-/* Window title */
-#title {
-    background-color: #cba6f7;
-    color: #1e1e2e;
-}
-
-/* Clock */
-#clock {
-    background-color: none;
-    color: #fff;
-}
-#clock.date {
-    background-color: none;
-    color: #fff;
-}
-
-/* System modules */
-#cpu {
-    background-color: #fab387;
-    color: #1e1e2e;
-}
-#mem {
-    background-color: #89b4fa;
-    color: #1e1e2e;
-}
-#volume {
-  background-color: none;
-    color: #fff;
-    margin: 0;
-    padding: 0;
-}
-#network {
-    background-color: #a6e3a1;
-    color: #1e1e2e;
-}
-#network.wifi {
-    background-color: #89b4fa;
-    color: #1e1e2e;
-}
-#network.ethernet {
-    background-color: #a6e3a1;
-    color: #1e1e2e;
-}
-#network.disconnected {
-    background-color: #f38ba8;
-    color: #1e1e2e;
-}
-#custom-net {
-    background-color: none;
-    color: #1e1e2e;
-}
-#battery {
-    background-color: none;
-    color: #fff;
 }
 
 /* Tray */
 #tray {
-    background-color: none;
+    background-color: rgba(79,110,150, 0.2);
     padding: 0px 12px;
 }
 
-/* Bluetooth button */
-#custom-cpu {
-  background-color: none;
-}
-#custom-wallpaper {
-  background-color: none;
-}
-#custom-bluetooth {
-    background-color: none;
-    color: #fff;
-    margin: 0;
-}
-
-/* Power button */
-#custom-power {
-    background-color: none;
-    color: #fff;
-    margin: 0;
-}

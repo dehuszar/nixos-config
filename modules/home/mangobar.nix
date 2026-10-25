@@ -17,6 +17,13 @@
     systemdTarget = "mango.target";
   };
 
+  # Install the service so it starts with the mango session
+  systemd.user.services.mangobar = {
+    Install = {
+      WantedBy = [ "mango.target" ];
+    };
+  };
+
   # Nerd Font so icon glyphs render in mangobar.
   home.packages = with pkgs.nerd-fonts; [
     jetbrains-mono

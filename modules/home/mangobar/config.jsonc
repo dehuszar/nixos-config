@@ -14,11 +14,12 @@
     "clock#time"
   ],
   "modules-right": [
+    "tray",
     "custom/wallpaper",
     "custom/cpu",
-    "custom/network",
     "custom/bluetooth",
     "pulseaudio",
+    "custom/network",
     "battery",
     "custom/power"
   ],

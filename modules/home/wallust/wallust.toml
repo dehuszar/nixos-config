@@ -26,6 +26,7 @@ palette = "saliencedark"
 # target:   absolute path where the rendered file goes
 # Both should be directories if either one is.
 # mango = { template = 'mango.conf', target = '~/.config/mango/mango.conf' }
+mangobar = { template = 'mangobar/style.css', target = '~/nix/nixos-config/modules/home/mangobar/style.css' }
 
 [hooks]
 # Commands run after wallust generates colors. Useful to avoid external
