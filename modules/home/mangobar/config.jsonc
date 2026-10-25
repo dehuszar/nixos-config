@@ -15,8 +15,7 @@
   ],
   "modules-right": [
     "custom/network",
-    "cpu",
-    "memory",
+    "custom/cpu",
     "pulseaudio",
     "battery",
     "custom/power"
@@ -32,6 +31,10 @@
   },
   "window": {
     "format": "{}"
+  },
+  "custom/cpu": {
+    "format": "",
+    "on-click": "ghostty --class=btop --title=btop -e btop"
   },
   "custom/network": {
     "exec": "bash ~/.config/mangobar/network.sh",
@@ -49,8 +52,8 @@
     "format": "{icon} {volume}%",
     "format-muted": "󰖁 muted",
     "icons": [
-      "󰖁",
       "󰕿",
+      "󰖀",
       "󰕾"
     ],
     "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",

@@ -9,10 +9,10 @@
     font-size: 16px;
     font-weight: normal;
     color: #cdd6f4;
-    background-color: #1e1e2e;
+    background-color: none;
     padding: 0px 10px;
     margin: 4px 1px;
-    border-radius: 6px;
+    border-radius: 50%; /* 6px; */
 }
 
 #bar {
@@ -60,12 +60,12 @@
 
 /* Clock */
 #clock {
-    background-color: #f9e2af;
-    color: #1e1e2e;
+    background-color: none;
+    color: #fff;
 }
 #clock.date {
-    background-color: #a6e3a1;
-    color: #1e1e2e;
+    background-color: none;
+    color: #fff;
 }
 
 /* System modules */
@@ -78,8 +78,8 @@
     color: #1e1e2e;
 }
 #volume {
-    background-color: #f5c2e7;
-    color: #1e1e2e;
+    /* background-color: #f5c2e7; */
+    color: #fff;
 }
 #network {
     background-color: #a6e3a1;
@@ -98,23 +98,24 @@
     color: #1e1e2e;
 }
 #custom-net {
-    background-color: #a6e3a1;
+    background-color: none;
     color: #1e1e2e;
 }
 #battery {
-    background-color: #f9e2af;
-    color: #1e1e2e;
+    background-color: none;
+    color: #fff;
 }
 
 /* Tray */
 #tray {
-    background-color: #45475a;
+    /* background-color: #45475a; */
+    background-color: none;
     padding: 0px 12px;
 }
 
 /* Power button */
 #custom-power {
     margin: 0px 5px;
-    background-color: #f38ba8;
-    color: #1e1e2e;
+    background-color: none;
+    color: #fff;
 }

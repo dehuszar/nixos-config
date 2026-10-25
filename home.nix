@@ -152,6 +152,7 @@ in
   home.packages = with pkgs; [
     blender
     bluetui
+    btop
     chromium
     cura-appimage
     dbeaver-bin
@@ -183,6 +184,7 @@ in
     simple-scan
     thorium-reader
     unzip
+    wlogout
     yt-dlp
   ];
 
