@@ -106,6 +106,27 @@
     };
   };
 
+  # ── awww wallpaper daemon ──────────────────────────────────────────
+  # Waypaper is configured to use awww as its backend (see
+  # ~/.config/waypaper/config.ini).  awww must stay running as a daemon
+  # for the wallpaper to persist — without it the image appears briefly
+  # then vanishes.
+  systemd.user.services.awww = {
+    Unit = {
+      Description = "awww wallpaper daemon";
+      After = [ "mango.target" ];
+      PartOf = [ "mango.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.awww}/bin/awww-daemon";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "mango.target" ];
+    };
+  };
+
   # ── Wallpaper restore ────────────────────────────────────────────────
   # Restores the last-set wallpaper on session start.  Lives here rather
   # than in mango.conf so it runs once per session (not on every config
@@ -113,8 +134,9 @@
   systemd.user.services.waypaper-restore = {
     Unit = {
       Description = "Restore waypaper wallpaper on session start";
-      After = [ "mango.target" ];
+      After = [ "mango.target" "awww.service" ];
       PartOf = [ "mango.target" ];
+      Wants = [ "awww.service" ];
     };
     Service = {
       Type = "oneshot";
