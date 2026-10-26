@@ -2,7 +2,7 @@
 
 ## What's been done
 
-1. **Updated `modules/home/recording.nix`**:
+1. **Updated `modules/desktop/recording.nix`**:
    - Added `bitwig-studio6-overridden` that overrides the nixpkgs version to 6.1.1
    - Updated `bitwig-studio-wrapped` to use the overridden version instead of `pkgs.bitwig-studio6`
 
@@ -24,7 +24,7 @@ The downloaded file will be named something like `installer_linux` but it's actu
 
 ### Step 3: Update the hash in recording.nix
 
-Open `/home/sam/nix/nixos-config/modules/home/recording.nix` and replace the placeholder hash:
+Open `/home/sam/nix/nixos-config/modules/desktop/recording.nix` and replace the placeholder hash:
 
 ```nix
 hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
