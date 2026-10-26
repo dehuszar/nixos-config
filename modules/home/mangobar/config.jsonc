@@ -59,6 +59,7 @@
       "󰖀",
       "󰕾"
     ],
+    "on-click": "pipewire-control-center",
     "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
     "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
   },
