@@ -105,4 +105,23 @@
       WantedBy = [ "default.target" ];
     };
   };
+
+  # ── Wallpaper restore ────────────────────────────────────────────────
+  # Restores the last-set wallpaper on session start.  Lives here rather
+  # than in mango.conf so it runs once per session (not on every config
+  # reload) and benefits from systemd lifecycle management.
+  systemd.user.services.waypaper-restore = {
+    Unit = {
+      Description = "Restore waypaper wallpaper on session start";
+      After = [ "mango.target" ];
+      PartOf = [ "mango.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.waypaper}/bin/waypaper --restore";
+    };
+    Install = {
+      WantedBy = [ "mango.target" ];
+    };
+  };
 }
