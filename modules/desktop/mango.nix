@@ -82,6 +82,31 @@
     };
   };
 
+  # ── Tablet mode display fix ─────────────────────────────────────────
+  # ThinkPad Yoga Gen 8 silently disables the eDP output at the DRM level
+  # when the GMMS tablet mode switch fires. This watchdog detects that and
+  # turns the display back on via wlr-randr.
+  home.file.".local/bin/mango-tablet-fix" = {
+    source = ./mango/mango-tablet-fix;
+    executable = true;
+  };
+
+  systemd.user.services.mango-tablet-fix = {
+    Unit = {
+      Description = "Re-enable eDP display when ThinkPad tablet mode switch disables it";
+      After = [ "mango.target" ];
+      PartOf = [ "mango.target" ];
+    };
+    Service = {
+      ExecStart = "%h/.local/bin/mango-tablet-fix";
+      Restart = "always";
+      RestartSec = 2;
+    };
+    Install = {
+      WantedBy = [ "mango.target" ];
+    };
+  };
+
   # ── Auto-rotate (accelerometer → screen transform) ───────────────
   # Reads the accelerometer directly from /sys/bus/iio/devices/ and
   # rotates eDP-1 via wlr-randr to match how you're holding the Yoga.

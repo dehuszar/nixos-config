@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# mango-tablet-fix
+#
+# On ThinkPad Yoga Gen 8, folding to tablet mode silently disables the
+# eDP output at the DRM level. This watchdog detects when the output
+# gets disabled and turns it back on via wlr-randr.
+
+MONITOR="${MANGO_TABLET_MONITOR:-eDP-1}"
+POLL_SEC="${MANGO_TABLET_POLL:-1}"
+TABLET_MODE="/sys/devices/platform/thinkpad_acpi/hotkey_tablet_mode"
+
+in_tablet_mode() {
+    [ "$(cat "$TABLET_MODE" 2>/dev/null)" = "1" ]
+}
+
+is_output_enabled() {
+    local enabled
+    enabled=$(cat "/sys/class/drm/card1-${MONITOR}/enabled" 2>/dev/null)
+    [ "$enabled" = "enabled" ]
+}
+
+while true; do
+    if in_tablet_mode && ! is_output_enabled; then
+        wlr-randr --output "$MONITOR" --on 2>/dev/null || true
+    fi
+    sleep "$POLL_SEC"
+done
