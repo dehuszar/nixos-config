@@ -2,7 +2,7 @@
 #
 # Home Manager entry point for user `sam`: identity, the shared package set,
 # and misc program config. Desktop (mangowm) and VM concerns live under
-# modules/home/ and are imported below.
+# modules/desktop/ and are imported below.
 {
   pkgs,
   lib,
@@ -79,7 +79,7 @@ let
   };
 
   # NOTE :: other aliases may be set by their respective modules.
-  # Make sure to check modules/home or the nixos-devtools flake if you are
+  # Make sure to check modules/desktop or the nixos-devtools flake if you are
   # unsure if an alias exists.
   shellAliases = {
     # bitwig backup steps
@@ -132,10 +132,10 @@ let
 in
 {
   imports = [
-    ./modules/home/mango.nix
-    ./modules/home/mangobar.nix
-    ./modules/home/wallust.nix
-    ./modules/home/vm-resize.nix
+    ./modules/desktop/mango.nix
+    ./modules/desktop/mangobar.nix
+    ./modules/desktop/wallust.nix
+    ./modules/desktop/vm-resize.nix
     inputs.hashistack.homeManagerModules.controller
     inputs.nixos-devtools.homeManagerModules.dev
   ];
@@ -240,14 +240,14 @@ in
   };
 
   xdg.configFile = {
-    "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;
+    "yazi/yazi.toml".text = builtins.readFile ./modules/desktop/yazi.toml;
   };
 
   # Symlink waypaper config directly from this repo (not the Nix store)
   # so that file changes are immediately available without rebuilding.
   home.activation.symlinkWaypaperConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     $DRY_RUN_CMD mkdir -p "$HOME/.config"
-    $DRY_RUN_CMD ln -sfn /home/sam/nix/nixos-config/modules/home/waypaper "$HOME/.config/waypaper"
+    $DRY_RUN_CMD ln -sfn /home/sam/nix/nixos-config/modules/desktop/waypaper "$HOME/.config/waypaper"
   '';
 
   # Install the pi-sbx wrapper script to ~/.local/bin.

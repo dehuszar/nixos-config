@@ -1,4 +1,4 @@
-# modules/home/vm-resize.nix
+# modules/desktop/vm-resize.nix
 #
 # VM-only auto-resize watcher.
 #

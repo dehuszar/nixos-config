@@ -1,4 +1,4 @@
-# modules/home/quickshell.nix
+# modules/desktop/quickshell.nix
 #
 # Home Manager configuration for QuickShell compositor.
 # Manages the quickshell program and its configuration files.

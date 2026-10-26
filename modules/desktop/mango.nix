@@ -1,4 +1,4 @@
-# modules/home/mango.nix
+# modules/desktop/mango.nix
 #
 # Home Manager side of mangowm: minimal Nix config that sources everything
 # from ~/.config/mango/*.conf so you can iterate without rebuilding.
@@ -36,22 +36,22 @@
   # edit without rebuilding.
 
   home.file.".local/bin/nixos-config-spawn" = {
-    source = ../mango/nixos-config-spawn;
+    source = ./mango/nixos-config-spawn;
     executable = true;
   };
 
   home.file.".local/bin/mango-config-watcher" = {
-    source = ../mango/mango-config-watcher;
+    source = ./mango/mango-config-watcher;
     executable = true;
   };
 
   home.file.".local/bin/screenshot" = {
-    source = ../mango/screenshot;
+    source = ./mango/screenshot;
     executable = true;
   };
 
   home.file.".local/bin/mango-network-status" = {
-    source = ../mango/mango-network-status;
+    source = ./mango/mango-network-status;
     executable = true;
   };
 
@@ -62,7 +62,7 @@
   # copy.  The watcher polls ~/.config/mango/mango.conf and runs
   # `mmsg dispatch reload_config`.
   home.activation.mango-conf-symlink = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/mango/mango.conf" "$HOME/.config/mango/mango.conf"
+    $DRY_RUN_CMD ln -sf "$HOME/nix/nixos-config/modules/desktop/mango/mango.conf" "$HOME/.config/mango/mango.conf"
   '';
 
   # ── Config watcher service ────────────────────────────────────────────
@@ -86,7 +86,7 @@
   # Reads the accelerometer directly from /sys/bus/iio/devices/ and
   # rotates eDP-1 via wlr-randr to match how you're holding the Yoga.
   home.file.".local/bin/mango-auto-rotate" = {
-    source = ../mango/mango-auto-rotate;
+    source = ./mango/mango-auto-rotate;
     executable = true;
   };
 

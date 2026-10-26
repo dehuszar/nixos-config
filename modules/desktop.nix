@@ -12,7 +12,7 @@
   # NixOS-level mango integration (portal, polkit, session entry).
   # `programs.mango` has no `settings`/`extraConfig` options and writes no
   # config file - the actual mangowm configuration lives on the Home Manager
-  # side in modules/home/mango.nix.
+  # side in modules/desktop/mango.nix.
   programs.mango.enable = true;
 
   services.greetd = {
