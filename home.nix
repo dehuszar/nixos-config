@@ -150,8 +150,10 @@ in
   home.stateVersion = "26.11";
 
   home.packages = with pkgs; [
+    awww
     blender
     bluetui
+    brightnessctl
     btop
     chromium
     cura-appimage
@@ -165,6 +167,8 @@ in
     inkscape
     # ladybird
     libation
+    libqalculate
+    librewolf
     mpv
     mpv-mpris
     obs-studio
@@ -172,21 +176,20 @@ in
     obsidian
     openscad
     orca-slicer
+    playerctl
     proton-authenticator
     proton-pass
     proton-pass-cli
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
-    libqalculate
     rclone
     signal-desktop
     simple-scan
     thorium-reader
     unzip
-    wlogout
-    awww
     waypaper
+    wlogout
     yt-dlp
   ];
 

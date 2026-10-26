@@ -58,12 +58,14 @@
     pywalfox-native
     qt6.qt3d
     qt6.qtbase
+    fuzzel
     satty
     slurp
     tuigreet
     wayfreeze
     wev
     wiremix
+    wireplumber
     wl-clip-persist
     wl-clipboard
     wlr-randr
