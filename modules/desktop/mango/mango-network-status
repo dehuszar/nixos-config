@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# ~/.local/bin/mango-network-status
+#
+# Outputs network status for mangobar's custom/network module.
+# Exit codes: 0 = connected, 1 = disconnected
+
+# Icons
+ICON_WIFI="󰖩"
+ICON_ETH="󰈀"
+ICON_DIS="󰖪"
+
+# Check if NetworkManager is running
+if command -v nmcli &>/dev/null && nmcli -t -f TYPE,STATE dev status 2>/dev/null | grep -q "connected"; then
+  # Get the primary active connection
+  conn_type=$(nmcli -t -f TYPE,DEVICE,STATE dev status 2>/dev/null \
+    | grep ":connected$" | head -1 | cut -d: -f1)
+  conn_dev=$(nmcli -t -f TYPE,DEVICE,STATE dev status 2>/dev/null \
+    | grep ":connected$" | head -1 | cut -d: -f2)
+
+  if [ "$conn_type" = "wifi" ]; then
+    ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep "^yes" | cut -d: -f2)
+    signal=$(nmcli -t -f active,SIGNAL dev wifi 2>/dev/null | grep "^yes" | cut -d: -f2 | head -1)
+    echo "${ICON_WIFI} ${ssid}"
+    exit 0
+  elif [ -n "$conn_type" ]; then
+    echo "${ICON_ETH} ${conn_dev}"
+    exit 0
+  fi
+fi
+
+# Fallback: check /sys for any carrier
+for iface in /sys/class/net/*; do
+  if [ "$(cat "$iface/carrier" 2>/dev/null)" = "1" ]; then
+    name=$(basename "$iface")
+    # Skip loopback
+    [ "$name" = "lo" ] && continue
+    # Check if wireless
+    if [ -d "$iface/wireless" ]; then
+      echo "${ICON_WIFI} ${name}"
+    else
+      echo "${ICON_ETH} ${name}"
+    fi
+    exit 0
+  fi
+done
+
+echo "${ICON_DIS}"
+exit 1

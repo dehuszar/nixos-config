@@ -2,7 +2,7 @@
 #
 # Home Manager entry point for user `sam`: identity, the shared package set,
 # and misc program config. Desktop (mangowm) and VM concerns live under
-# modules/home/ and are imported below.
+# modules/desktop/ and are imported below.
 {
   pkgs,
   lib,
@@ -17,23 +17,37 @@ let
     runtimeInputs = [
       pkgs.proton-pass-cli
       pkgs.docker-sbx
+      pkgs.jq
+      pkgs.gnused
     ];
     text = ''
-      set -euo pipefail
+      # Usage: pi-sbx.sh SANDBOX_NAME [WORKDIR] [extra sbx args...]
+      # (writeShellApplication already sets errexit/nounset/pipefail)
+
+      if [ "$#" -lt 1 ]; then
+        echo "usage: pi-sbx.sh SANDBOX_NAME [WORKDIR] [extra sbx args...]" >&2
+        exit 1
+      fi
+      NAME="$1"
+      shift
+
+      WORKDIR="''${1:-.}"
+      if [ "$#" -gt 0 ]; then shift; fi
 
       # Ensure we have an authenticated pass-cli session
       if ! pass-cli info >/dev/null 2>&1; then
         echo "No active pass-cli session. Logging in..."
-        pass-cli login --interactive
+        pass-cli login
       fi
-
-      NAME="$1"
-      shift
 
       # Fetch secrets from pass-cli
       PASS_ITEM=$(pass-cli item view --vault-name Personal --item-title "Lemonade AI API Key" --output json)
 
       LEMONADE_API_KEY=$(echo "$PASS_ITEM" | jq -r '.item.content.content.Login.password')
+      if [ -z "$LEMONADE_API_KEY" ] || [ "$LEMONADE_API_KEY" = "null" ]; then
+        echo "error: could not read API key from pass item" >&2
+        exit 1
+      fi
 
       # Extract URLs — adjust selectors if your pass-cli output structure differs
       LEMONADE_API_DOMAIN_REMOTE=$(echo "$PASS_ITEM" \
@@ -44,21 +58,28 @@ let
         | jq -r '.item.content.content.Login.urls[] | select(contains("192.168"))' \
         | sed 's|/$||')/v1
 
+      # docker-sbx v0.48.0 broke positional-arg volume mounting; workdir
+      # is now derived from the cwd.
+      cd "$WORKDIR"
+
       echo "Starting sandbox with lemonade AI providers..."
       echo "  Remote: $LEMONADE_API_DOMAIN_REMOTE"
       echo "  Local:  $LEMONADE_API_DOMAIN_LOCAL"
 
-      sbx run \
+      # The kit extends the shell sandbox template, so pi is started by
+      # handing -c pi to the in-sandbox shell after "--". The kit dir is
+      # the first positional (sbx 0.48.0: --kit only accepts mixins).
+      sbx run "$HOME/sbx-shell-pi" \
+        --name "$NAME" \
         -e LEMONADE_API_KEY="$LEMONADE_API_KEY" \
         -e LEMONADE_API_DOMAIN_REMOTE="$LEMONADE_API_DOMAIN_REMOTE" \
         -e LEMONADE_API_DOMAIN_LOCAL="$LEMONADE_API_DOMAIN_LOCAL" \
-        --name "$NAME" --kit ~/sbx-shell-pi \
         "$@" -- -c "pi"
     '';
   };
 
   # NOTE :: other aliases may be set by their respective modules.
-  # Make sure to check modules/home or the nixos-devtools flake if you are
+  # Make sure to check modules/desktop or the nixos-devtools flake if you are
   # unsure if an alias exists.
   shellAliases = {
     # bitwig backup steps
@@ -111,9 +132,10 @@ let
 in
 {
   imports = [
-    ./modules/home/mango.nix
-    ./modules/home/noctalia-shell.nix
-    ./modules/home/vm-resize.nix
+    ./modules/desktop/mango.nix
+    ./modules/desktop/mangobar.nix
+    ./modules/desktop/wallust.nix
+    ./modules/desktop/vm-resize.nix
     inputs.hashistack.homeManagerModules.controller
     inputs.nixos-devtools.homeManagerModules.dev
   ];
@@ -128,8 +150,11 @@ in
   home.stateVersion = "26.11";
 
   home.packages = with pkgs; [
+    awww
     blender
     bluetui
+    brightnessctl
+    btop
     chromium
     cura-appimage
     dbeaver-bin
@@ -142,25 +167,28 @@ in
     inkscape
     # ladybird
     libation
+    libqalculate
+    librewolf
     mpv
-    mpv-mpris
     obs-studio
     obs-studio-plugins.wlrobs
     obsidian
     openscad
     orca-slicer
+    playerctl
     proton-authenticator
     proton-pass
     proton-pass-cli
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
-    libqalculate
     rclone
     signal-desktop
     simple-scan
     thorium-reader
     unzip
+    waypaper
+    wlogout
     yt-dlp
   ];
 
@@ -190,7 +218,7 @@ in
   # Reload Mango config automatically after home-manager switch
   home.activation = {
     reloadMango = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD noctalia msg config-reload 2>/dev/null || true
+      $DRY_RUN_CMD systemctl --user restart mangobar.service 2>/dev/null || true
     '';
   };
 
@@ -211,8 +239,15 @@ in
   };
 
   xdg.configFile = {
-    "yazi/yazi.toml".text = builtins.readFile ./modules/home/yazi.toml;
+    "yazi/yazi.toml".text = builtins.readFile ./modules/desktop/yazi.toml;
   };
+
+  # Symlink waypaper config directly from this repo (not the Nix store)
+  # so that file changes are immediately available without rebuilding.
+  home.activation.symlinkWaypaperConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD mkdir -p "$HOME/.config"
+    $DRY_RUN_CMD ln -sfn /home/sam/nix/nixos-config/modules/desktop/waypaper "$HOME/.config/waypaper"
+  '';
 
   # Install the pi-sbx wrapper script to ~/.local/bin.
   home.file.".local/bin/pi-sbx.sh".source = "${pi-sbx}/bin/pi-sbx.sh";

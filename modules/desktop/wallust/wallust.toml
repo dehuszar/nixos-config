@@ -1,0 +1,34 @@
+# wallust v3 — https://explosion-mental.codeberg.page/wallust/
+
+# How the image is parsed to extract colors:
+# full | resized | wal | thumb | fastresize | kmeans
+backend = "fastresize"
+
+# Color space used to produce and select the most prominent colors:
+# lab | labmixed | lch | lchmixed | salience
+color_space = "salience"
+
+# Palette scheme — use prominent colors in a meaningful way:
+# saliencedark | saliencedarkbalanced | saliencedarkdistributed | saliencedarklow
+# saliencelight | saliencelightbalanced | saliencelightdistributed | saliencelightlow
+# dark | dark16 | darkcomp | darkcomp16
+# light | light16 | lightcomp | lightcomp16
+palette = "saliencedark"
+
+# Uncomment to force readable contrast (disabled by default)
+#check_contrast = true
+
+# Color saturation [1-100%] — default 100 (no change)
+#saturation = 35
+
+[templates]
+# template: relative path under ~/.config/wallust/templates/
+# target:   absolute path where the rendered file goes
+# Both should be directories if either one is.
+# mango = { template = 'mango.conf', target = '~/.config/mango/mango.conf' }
+mangobar = { template = 'mangobar/style.css', target = '~/nix/nixos-config/modules/desktop/mangobar/style.css' }
+
+[hooks]
+# Commands run after wallust generates colors. Useful to avoid external
+# scripting — e.g. set wallpaper, reload apps, etc.
+# wallpaper = """swww img "$(find ~/Pictures/Wallpapers -iregex '.*.\\(jpg\\|jpeg\\|png\\|gif\\)' -type f | shuf -n 1)" """

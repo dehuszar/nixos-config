@@ -11,7 +11,14 @@
     ./modules/first-boot.nix
   ];
 
-  boot.loader.systemd-boot.enable = true;
+  # Block ACPI display-toggle events triggered by the GMMS tablet mode
+  # switch on ThinkPad Yoga Gen 8, which silently kills the eDP panel.
+  boot.kernelParams = [ "acpi_backlight=native" ];
+
+  boot.loader.systemd-boot = {
+    enable = true;
+    configurationLimit = 5;
+  };
   boot.loader.efi.canTouchEfiVariables = true;
   # --- UEFI Secure Boot (lanzaboote) - commented out until needed ---
   # Requires the lanzaboote input + module in flake.nix; REPLACES systemd-boot.
@@ -34,6 +41,7 @@
     gdb
     git
     gnumake
+    iw
     jq
     kdePackages.qt5compat
     nss
@@ -49,6 +57,8 @@
 
   networking.hostName = "creation-station";
   networking.networkmanager.enable = true;
+  networking.networkmanager.wifi.backend = "iwd";
+  networking.wireless.iwd.settings.General.Country = "US";
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.permittedInsecurePackages = [
@@ -83,14 +93,21 @@
   services.ipp-usb.enable = true;
   services.logind.settings.Login.HandleLidSwitch = "suspend";
   services.logind.settings.Login.HandleLidSwitchDocked = "ignore";
-  services.logind.settings.Login.HandleLidSwitchExternalPower =
-    "suspendpowerManagement.enable = true;powerManagement.enable = true;";
+  services.logind.settings.Login.HandleLidSwitchExternalPower = "suspend";
   services.printing = {
     enable = true;
   };
   services.udisks2.enable = true;
   services.udev.extraRules = ''
     SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3297", ATTRS{idProduct}=="1977", GROUP="keymapp", MODE="0660"
+
+    # ThinkPad Yoga Gen 8: inhibit the tablet mode switch (SW_TABLET_MODE)
+    # from the "ThinkPad Extra Buttons" input device. When the hinge reaches
+    # 360°, the GMMS ACPI switch fires and silently kills the eDP output.
+    # Blocking it at the input layer prevents the display from being disabled.
+    # Note: this also suppresses thinkpad_acpi hotkey events (Fn keys), but
+    # most hotkeys still arrive via the intel-hid driver separately.
+    ACTION=="add|change", SUBSYSTEM=="input", ATTRS{name}=="ThinkPad Extra Buttons", ATTR{inhibited}="1"
   '';
 
   system.stateVersion = "26.11";

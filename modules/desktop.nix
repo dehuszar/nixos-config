@@ -12,7 +12,7 @@
   # NixOS-level mango integration (portal, polkit, session entry).
   # `programs.mango` has no `settings`/`extraConfig` options and writes no
   # config file - the actual mangowm configuration lives on the Home Manager
-  # side in modules/home/mango.nix.
+  # side in modules/desktop/mango.nix.
   programs.mango.enable = true;
 
   services.greetd = {
@@ -24,6 +24,10 @@
         # session (bypasses systemd user services entirely).
         command = "${pkgs.systemd}/bin/systemd-cat -t mango -p info mango";
         user = "sam"; # auto-login on first start, no password required
+      };
+      default_session = {
+        command = "${pkgs.greetd}/bin/tuigreet --time --cmd mango";
+        user = "greeter";
       };
     };
   };
@@ -37,20 +41,6 @@
   services.seatd.enable = true;
 
   services.upower.enable = true;
-
-  # noctalia-greeter: graphical login screen replacing tuigreet/greetd.
-  services.displayManager.noctalia-greeter = {
-    enable = true;
-    settings = {
-      cursor.size = 24;
-      keyboard.layout = "us";
-      output."DP-3".enabled = false;
-    };
-    cursorTheme = {
-      package = pkgs.bibata-cursors;
-      name = "Bibata-Modern-Ice";
-    };
-  };
 
   environment.systemPackages = with pkgs; [
     baobab
@@ -68,12 +58,14 @@
     pywalfox-native
     qt6.qt3d
     qt6.qtbase
+    fuzzel
     satty
     slurp
     tuigreet
     wayfreeze
     wev
     wiremix
+    wireplumber
     wl-clip-persist
     wl-clipboard
     wlr-randr
@@ -81,5 +73,9 @@
     xdg-desktop-portal-gtk
     xdg-desktop-portal-wlr
     yazi
+  ];
+
+  fonts.packages = with pkgs; [
+    dejavu_fonts
   ];
 }

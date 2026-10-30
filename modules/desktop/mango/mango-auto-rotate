@@ -11,7 +11,6 @@
 #   180      = landscape, upside down
 #   270      = portrait, right edge up
 
-ACCEL_DEV="${MANGO_ACCEL_DEV:-/sys/bus/iio/devices/iio:device1}"
 MONITOR="${MANGO_ROTATE_MONITOR:-eDP-1}"
 DEBOUNCE_SEC="${MANGO_ROTATE_DEBOUNCE:-1}"
 # Hysteresis: ignore gravity below this fraction of 1g to reduce jitter
@@ -20,6 +19,41 @@ THRESHOLD="${MANGO_ACCEL_THRESHOLD:-2000}"
 
 LAST_TRANSFORM=""
 LAST_TIME=0
+ACCEL_DEV="${MANGO_ACCEL_DEV:-}"
+
+log() {
+    echo "mango-auto-rotate: $*"
+}
+
+# ── Find an accelerometer device ────────────────────────────────
+# Auto-detect any IIO device exposing x/y/z accel channels, so we
+# survive re-enumeration across boots, resumes, and module reloads.
+# MANGO_ACCEL_DEV (if set) is tried first and only re-detected if it
+# disappears.
+find_accel_dev() {
+    for d in /sys/bus/iio/devices/iio:device*; do
+        [ -e "$d/in_accel_x_raw" ] || continue
+        [ -e "$d/in_accel_y_raw" ] || continue
+        [ -e "$d/in_accel_z_raw" ] || continue
+        echo "$d"
+        return 0
+    done
+    return 1
+}
+
+ensure_accel_dev() {
+    if [ -n "$ACCEL_DEV" ] && [ -e "$ACCEL_DEV/in_accel_x_raw" ]; then
+        return 0
+    fi
+    if dev=$(find_accel_dev); then
+        if [ "$dev" != "$ACCEL_DEV" ]; then
+            log "using accelerometer: $dev ($(cat "$dev/name" 2>/dev/null))"
+        fi
+        ACCEL_DEV="$dev"
+        return 0
+    fi
+    return 1
+}
 
 set_transform() {
     transform="$1"
@@ -33,15 +67,19 @@ set_transform() {
     LAST_TRANSFORM="$transform"
     LAST_TIME="$now"
 
-    wlr-randr --output "$MONITOR" --transform "$transform" 2>/dev/null || true
+    wlr-randr --output "$MONITOR" --transform "$transform" || \
+        log "wlr-randr failed for transform '$transform' on $MONITOR"
 }
 
 # ── Main loop ─────────────────────────────────────────────────────
 while true; do
+    # (Re-)locate the accelerometer; skip this cycle if none found
+    ensure_accel_dev || { log "no accelerometer found, retrying..."; sleep 5; continue; }
+
     # Read raw 3-axis accelerometer values
-    x=$(cat "$ACCEL_DEV/in_accel_x_raw" 2>/dev/null) || { sleep 1; continue; }
-    y=$(cat "$ACCEL_DEV/in_accel_y_raw" 2>/dev/null) || { sleep 1; continue; }
-    z=$(cat "$ACCEL_DEV/in_accel_z_raw" 2>/dev/null) || { sleep 1; continue; }
+    x=$(cat "$ACCEL_DEV/in_accel_x_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
+    y=$(cat "$ACCEL_DEV/in_accel_y_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
+    z=$(cat "$ACCEL_DEV/in_accel_z_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
 
     # Absolute values
     ax=${x#-}  # strip sign

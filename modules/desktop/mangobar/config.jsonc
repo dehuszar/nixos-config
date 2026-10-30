@@ -1,0 +1,101 @@
+// mangobar config — editable in-place, no rebuild needed.
+// Reload with: systemctl --user restart mangobar.service
+{
+  "layer": "top",
+  "height": 30,
+  "buffer-scale": 1,
+  "modules-left": [
+    "workspaces",
+    "layout"
+    // "window"
+  ],
+  "modules-center": [
+    "clock#date",
+    "clock#time"
+  ],
+  "modules-right": [
+    "tray",
+    "custom/wallpaper",
+    "custom/cpu",
+    "custom/bluetooth",
+    "pulseaudio",
+    "custom/network",
+    "battery",
+    "custom/power"
+  ],
+  "workspaces": {
+    "hide-empty": true,
+    "overview-label": "OVERVIEW",
+    "on-click": "activate",
+    "on-click-right": "toggle"
+  },
+  "layout": {
+    "format": "{}"
+  },
+  "window": {
+    "format": "{}"
+  },
+  "custom/cpu": {
+    "format": "",
+    "on-click": "ghostty --class=btop --title=btop -e btop"
+  },
+  "custom/network": {
+    "exec": "bash ~/.config/mangobar/network.sh",
+    "interval": 10,
+    "on-click": "ghostty --class=impala --title=impala -e impala",
+    "format": "{}"
+  },
+  "cpu": {
+    "format": " {load}%"
+  },
+  "memory": {
+    "format": " {}%"
+  },
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰖁 muted",
+    "icons": [
+      "󰕿",
+      "󰖀",
+      "󰕾"
+    ],
+    "on-click": "pipewire-control-center",
+    "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+    "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+  },
+  "battery": {
+    "format": "{icon} {percent}%",
+    "icons": [
+      "󰂎",
+      "󰁺",
+      "󰁻",
+      "󰁼",
+      "󰁽",
+      "󰁾",
+      "󰁿",
+      "󰂀",
+      "󰂁",
+      "󰂂",
+      "󰁹"
+    ]
+  },
+  "clock#date": {
+    "format": " %A, %B %d"
+  },
+  "clock#time": {
+    "format": "%I:%M %p"
+  },
+  "custom/power": {
+    "format": "",
+    "on-click": "wlogout",
+    "on-click-right": "sleep 0.1s && swaync-client -t -sw"
+  },
+  "custom/bluetooth": {
+    "format": "󰂯",
+    "on-click": "ghostty --class=bluetui --title=bluetui -e bluetui"
+  },
+  "custom/wallpaper": {
+    "format": "󰸉",
+    "on-click": "waypaper"
+  }
+}

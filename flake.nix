@@ -11,11 +11,10 @@
       url = "github:quickshell-mirror/quickshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    noctalia = {
-      url = "github:noctalia-dev/noctalia";
+    mangobar = {
+      url = "github:mangowm/mangobar";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     recording = {
       url = "path:/home/sam/nix/nix-flakes/nixos-recording";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -46,11 +45,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    mpv-mpris = {
-      url = "path:/home/sam/nix/nix-flakes/mpv-mpris";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -67,14 +61,13 @@
       home-manager,
       mangowm,
       quickshell,
-      noctalia,
+      mangobar,
       recording,
       nixvim,
       disko,
       brother-mfc9970cdw,
       hashistack,
       nixos-devtools,
-      mpv-mpris,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -100,7 +93,6 @@
           inherit system;
           specialArgs = { inherit isVM; };
           modules = [
-            { nixpkgs.overlays = [ mpv-mpris.overlays.default ]; }
             ./configuration.nix
             home-manager.nixosModules.home-manager
             {
@@ -113,11 +105,11 @@
                 imports = [
                   ./home.nix
                   recording.homeManagerModules.default
+                  mangobar.homeManagerModules.default
                 ];
               };
             }
             mangowm.nixosModules.mango
-            noctalia.nixosModules.default
             nixos-devtools.nixosModules.default
             brother-mfc9970cdw.nixosModules.default
             recording.nixosModules.default

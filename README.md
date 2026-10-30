@@ -12,7 +12,7 @@ modules, selected by an `isVM` flag threaded through `flake.nix`'s
 | `nixosConfigurations.vm` | `true` | A QEMU test VM. Renders through virgl (host-side accelerated GL) via the VM-only qemu module. |
 
 The only config difference between the two is the mangowm `env` block in
-`modules/home/mango.nix` and, for the VM, the QEMU display adapter set in the
+`modules/desktop/mango.nix` and, for the VM, the QEMU display adapter set in the
 **VM-only module** `modules/vm.nix` (it deliberately is not in shared
 `configuration.nix`, so it can't break the real-hardware build):
 
@@ -111,7 +111,7 @@ make run-cli
 > only faint bars, the guest has fallen back to llvmpipe — re-check the QEMU
 > `gl=on` flags and that the host QEMU window has a GL context.
 
-### Useful mangowm keys (from `modules/home/mango.nix`)
+### Useful mangowm keys (from `modules/desktop/mango.nix`)
 
 | Keys | Action |
 | --- | --- |
@@ -293,8 +293,8 @@ nix eval .#nixosConfigurations.vm.config.virtualisation.qemu.options
 | `home.nix` | Home Manager entry point (identity, shared packages, programs) |
 | `modules/desktop.nix` | Desktop stack: mangowm (NixOS side), seatd, greetd |
 | `modules/vm.nix` | VM-only: qemu-vm import, virtio-gpu display, tmpfs root, VM password |
-| `modules/home/mango.nix` | Home Manager mangowm config (settings + bindings) |
-| `modules/home/vm-resize.nix` | VM-only auto-resize watcher (event-driven) |
+| `modules/desktop/mango.nix` | Home Manager mangowm config (settings + bindings) |
+| `modules/desktop/vm-resize.nix` | VM-only auto-resize watcher (event-driven) |
 | `modules/disko.nix` | Declarative disk layout: GPT + LUKS + ext4 (real hardware) |
 | `bitwig.nix` | Imported home-manager module (packages) |
 | `Makefile` | `build`, `build-vm`, `check`, `run`, `run-cli` |

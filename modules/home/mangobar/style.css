@@ -1,0 +1,60 @@
+/* =========================================================
+ * mangobar style — editable in-place, no rebuild needed.
+ * Reload with: systemctl --user restart mangobar.service
+ * ========================================================= */
+
+/* ==================== Font ==================== */
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 16px;
+    font-weight: normal;
+    color: #91E8FF;
+    background-color: none;
+    padding: 0px 10px;
+    margin: 0;
+    border-radius: 50%;
+}
+
+#bar {
+    background-color: rgba(127,130,146, 0.2);
+    margin: 4px 10px;
+}
+#bar.sel {
+    background: none;
+}
+
+/* Tags / workspaces */
+#tags {
+    padding: 0px 13px;
+    margin: 0px 2px;
+}
+#tags.active {
+    background-color: #91E8FF;
+    color: #010509;
+}
+#tags.occupied {
+    background-color: #585b70;
+    color: #cdd6f4;
+}
+#tags.urgent {
+    background-color: #f38ba8;
+    color: #1e1e2e;
+}
+#tags.empty {
+    background-color: #313244;
+    color: #a6adc8;
+}
+
+/* Layout symbol */
+#layout {
+    background-color: #4F6E96;
+    color: #010509;
+    min-width: 34px;
+}
+
+/* Tray */
+#tray {
+    background-color: rgba(79,110,150, 0.2);
+    padding: 0px 12px;
+}
+
