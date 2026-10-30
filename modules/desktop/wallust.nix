@@ -12,7 +12,7 @@
 {
   # Install wallust from its flake.
   home.packages = [
-    inputs.wallust.packages.${pkgs.system}.wallust
+    pkgs.wallust
   ];
 
   # Symlink wallust.toml → ~/.config/wallust/wallust.toml

@@ -170,7 +170,6 @@ in
     libqalculate
     librewolf
     mpv
-    mpv-mpris
     obs-studio
     obs-studio-plugins.wlrobs
     obsidian

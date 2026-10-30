@@ -14,13 +14,13 @@
   # -- mangobar --
   services.mangobar = {
     enable = true;
-    systemdTarget = "mango.target";
+    systemdTarget = "graphical-session.target";
   };
 
-  # Install the service so it starts with the mango session
+  # Install the service so it starts with the graphical session
   systemd.user.services.mangobar = {
     Install = {
-      WantedBy = [ "mango.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 

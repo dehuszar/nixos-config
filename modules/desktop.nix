@@ -74,4 +74,8 @@
     xdg-desktop-portal-wlr
     yazi
   ];
+
+  fonts.packages = with pkgs; [
+    dejavu_fonts
+  ];
 }

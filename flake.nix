@@ -15,11 +15,6 @@
       url = "github:mangowm/mangobar";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    wallust = {
-      url = "github:explosion-mental/wallust/master";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     recording = {
       url = "path:/home/sam/nix/nix-flakes/nixos-recording";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -50,11 +45,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    mpv-mpris = {
-      url = "path:/home/sam/nix/nix-flakes/mpv-mpris";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # --- UEFI Secure Boot (lanzaboote) ---
     # Uncomment this input AND the `lanzaboote` ref below (and the
     # boot.lanzaboote block in configuration.nix), then:
@@ -72,14 +62,12 @@
       mangowm,
       quickshell,
       mangobar,
-      wallust,
       recording,
       nixvim,
       disko,
       brother-mfc9970cdw,
       hashistack,
       nixos-devtools,
-      mpv-mpris,
       # lanzaboote,   # uncomment with the input above for Secure Boot
       ...
     }:
@@ -105,20 +93,6 @@
           inherit system;
           specialArgs = { inherit isVM; };
           modules = [
-            {
-              nixpkgs.overlays = [
-                mpv-mpris.overlays.default
-                (final: prev: {
-                  python3Packages = prev.python3Packages.override {
-                    overrides = self: super: {
-                      diff-cover = super.diff-cover.overridePythonAttrs (_: {
-                        doCheck = false;
-                      });
-                    };
-                  };
-                })
-              ];
-            }
             ./configuration.nix
             home-manager.nixosModules.home-manager
             {

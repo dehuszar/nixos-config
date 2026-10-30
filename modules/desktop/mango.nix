@@ -71,6 +71,7 @@
   systemd.user.services.mango-config-watcher = {
     Unit = {
       Description = "Watch Mango config files and hot-reload on change";
+      PartOf = [ "graphical-session.target" ];
     };
     Service = {
       ExecStart = "%h/.local/bin/mango-config-watcher";
@@ -78,32 +79,7 @@
       RestartSec = 2;
     };
     Install = {
-      WantedBy = [ "default.target" ];
-    };
-  };
-
-  # ── Tablet mode display fix ─────────────────────────────────────────
-  # ThinkPad Yoga Gen 8 silently disables the eDP output at the DRM level
-  # when the GMMS tablet mode switch fires. This watchdog detects that and
-  # turns the display back on via wlr-randr.
-  home.file.".local/bin/mango-tablet-fix" = {
-    source = ./mango/mango-tablet-fix;
-    executable = true;
-  };
-
-  systemd.user.services.mango-tablet-fix = {
-    Unit = {
-      Description = "Re-enable eDP display when ThinkPad tablet mode switch disables it";
-      After = [ "mango.target" ];
-      PartOf = [ "mango.target" ];
-    };
-    Service = {
-      ExecStart = "%h/.local/bin/mango-tablet-fix";
-      Restart = "always";
-      RestartSec = 2;
-    };
-    Install = {
-      WantedBy = [ "mango.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 
@@ -118,8 +94,7 @@
   systemd.user.services.mango-auto-rotate = {
     Unit = {
       Description = "Auto-rotate Mango display based on accelerometer orientation";
-      After = [ "default.target" ];
-      PartOf = [ "default.target" ];
+      PartOf = [ "graphical-session.target" ];
     };
     Service = {
       ExecStart = "%h/.local/bin/mango-auto-rotate";
@@ -127,7 +102,7 @@
       RestartSec = 5;
     };
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 
@@ -139,8 +114,7 @@
   systemd.user.services.awww = {
     Unit = {
       Description = "awww wallpaper daemon";
-      After = [ "mango.target" ];
-      PartOf = [ "mango.target" ];
+      PartOf = [ "graphical-session.target" ];
     };
     Service = {
       ExecStart = "${pkgs.awww}/bin/awww-daemon";
@@ -148,7 +122,7 @@
       RestartSec = 3;
     };
     Install = {
-      WantedBy = [ "mango.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 
@@ -159,16 +133,16 @@
   systemd.user.services.waypaper-restore = {
     Unit = {
       Description = "Restore waypaper wallpaper on session start";
-      After = [ "mango.target" "awww.service" ];
-      PartOf = [ "mango.target" ];
+      After = [ "awww.service" ];
       Wants = [ "awww.service" ];
+      PartOf = [ "graphical-session.target" ];
     };
     Service = {
       Type = "oneshot";
       ExecStart = "${pkgs.waypaper}/bin/waypaper --restore";
     };
     Install = {
-      WantedBy = [ "mango.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 }
