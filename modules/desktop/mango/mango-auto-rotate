@@ -1,9 +1,16 @@
 #!/bin/sh
 # mango-auto-rotate
 #
-# Reads the accelerometer directly from /sys/bus/iio/devices/ and rotates
-# the Mango internal display (eDP-1) to match how you're holding the Yoga.
-# No iio-sensor-proxy dependency needed.
+# Thin bridge between iio-sensor-proxy (D-Bus) and wlr-randr: watches the
+# ThinkPad Yoga's accelerometer orientation as published by
+# org.freedesktop.iio.iiosensorproxy and applies the matching transform to
+# the internal display.
+#
+# Requires hardware.sensor.iio.enable = true (system config). We deliberately
+# do NOT read /sys/bus/iio/devices/*/in_accel_*_raw: on Intel ISH machines the
+# hid-sensor sysfs values are frozen unless a consumer enables the IIO trigger
+# buffer — which is exactly what iio-sensor-proxy does for us. Scraping sysfs
+# silently "succeeds" on stale data, which is how auto-rotate used to die.
 #
 # Transform names (wlr-randr format):
 #   normal   = landscape
@@ -13,98 +20,118 @@
 
 MONITOR="${MANGO_ROTATE_MONITOR:-eDP-1}"
 DEBOUNCE_SEC="${MANGO_ROTATE_DEBOUNCE:-1}"
-# Hysteresis: ignore gravity below this fraction of 1g to reduce jitter
-# when the device is near a boundary.  Raw value; adjust per device.
-THRESHOLD="${MANGO_ACCEL_THRESHOLD:-2000}"
+POLL_SEC="${MANGO_ROTATE_POLL:-1}"
+DEBUG="${MANGO_ROTATE_DEBUG:-0}"
+
+DBUS_SERVICE="org.freedesktop.IIO"
+DBUS_ROOT="/org/freedesktop/IIO"
+ACCEL_IFACE="org.freedesktop.IIO.Accelerometer"
 
 LAST_TRANSFORM=""
-LAST_TIME=0
-ACCEL_DEV="${MANGO_ACCEL_DEV:-}"
+CANDIDATE=""
+CAND_COUNT=0
+DBUS_DEV=""
 
+# Everything goes to stderr so stdout stays clean for value-capturing
+# helpers below (transform=$(poll_dbus)).
 log() {
-    echo "mango-auto-rotate: $*"
+    echo "mango-auto-rotate: $*" >&2
 }
 
-# ── Find an accelerometer device ────────────────────────────────
-# Auto-detect any IIO device exposing x/y/z accel channels, so we
-# survive re-enumeration across boots, resumes, and module reloads.
-# MANGO_ACCEL_DEV (if set) is tried first and only re-detected if it
-# disappears.
-find_accel_dev() {
-    for d in /sys/bus/iio/devices/iio:device*; do
-        [ -e "$d/in_accel_x_raw" ] || continue
-        [ -e "$d/in_accel_y_raw" ] || continue
-        [ -e "$d/in_accel_z_raw" ] || continue
-        echo "$d"
-        return 0
+debug() {
+    [ "$DEBUG" = "1" ] && log "$*"
+    return 0
+}
+
+# ── D-Bus discovery ─────────────────────────────────────────────
+# Find the device object that exposes the Accelerometer interface.
+find_dbus_dev() {
+    objs=$(busctl --system call "$DBUS_SERVICE" "$DBUS_ROOT" \
+        org.freedesktop.DBus.ObjectManager GetManagedObjects 2>/dev/null) || \
+        return 1
+    for path in $(echo "$objs" | grep -o "$DBUS_ROOT/[A-Za-z0-9_-]*" | sort -u); do
+        if busctl --system introspect "$DBUS_SERVICE" "$path" 2>/dev/null | \
+            grep -q "Accelerometer"; then
+            echo "$path"
+            return 0
+        fi
     done
     return 1
 }
 
-ensure_accel_dev() {
-    if [ -n "$ACCEL_DEV" ] && [ -e "$ACCEL_DEV/in_accel_x_raw" ]; then
-        return 0
-    fi
-    if dev=$(find_accel_dev); then
-        if [ "$dev" != "$ACCEL_DEV" ]; then
-            log "using accelerometer: $dev ($(cat "$dev/name" 2>/dev/null))"
-        fi
-        ACCEL_DEV="$dev"
-        return 0
-    fi
-    return 1
+# iio-sensor-proxy orientation strings → wlr-randr transforms.
+# If portrait rotation feels inverted, swap the 90/270 mappings here.
+map_dbus_orientation() {
+    case "$1" in
+        normal)     echo normal ;;
+        bottom-up)  echo 180 ;;
+        left-up)    echo 90 ;;
+        right-up)   echo 270 ;;
+        *)          echo "" ;;
+    esac
 }
 
+# Poll D-Bus once; echoes a transform on success, returns nonzero on
+# failure (caller retries discovery).
+poll_dbus() {
+    if [ -z "$DBUS_DEV" ]; then
+        DBUS_DEV=$(find_dbus_dev) || return 1
+        [ -n "$DBUS_DEV" ] || return 1
+        log "using iio-sensor-proxy device: $DBUS_DEV"
+    fi
+
+    orient=$(busctl --system get-property "$DBUS_SERVICE" "$DBUS_DEV" \
+        "$ACCEL_IFACE" Orientation 2>/dev/null | tr -d '"') || \
+        { DBUS_DEV=""; return 1; }
+    [ -n "$orient" ] || { DBUS_DEV=""; return 1; }
+
+    debug "dbus orientation: $orient"
+    t=$(map_dbus_orientation "$orient")
+    [ -n "$t" ] || return 1
+    echo "$t"
+    return 0
+}
+
+# ── Applying transforms ─────────────────────────────────────────
+# Only act on genuine orientation *changes*; re-applying the same transform
+# every poll cycle would fight any manual wlr-randr call.
 set_transform() {
     transform="$1"
-    now=$(date +%s)
-    elapsed=$((now - LAST_TIME))
 
-    if [ "$transform" = "$LAST_TRANSFORM" ] && [ "$elapsed" -lt "$DEBOUNCE_SEC" ]; then
+    if [ "$transform" = "$LAST_TRANSFORM" ]; then
+        CANDIDATE=""
+        CAND_COUNT=0
         return
     fi
 
-    LAST_TRANSFORM="$transform"
-    LAST_TIME="$now"
+    # Debounce: require the new orientation to persist for
+    # DEBOUNCE_SEC consecutive polls before committing.
+    if [ "$transform" = "$CANDIDATE" ]; then
+        CAND_COUNT=$((CAND_COUNT + 1))
+    else
+        CANDIDATE="$transform"
+        CAND_COUNT=1
+    fi
+    [ "$CAND_COUNT" -le "$DEBOUNCE_SEC" ] && return
 
+    LAST_TRANSFORM="$transform"
+    CANDIDATE=""
+    CAND_COUNT=0
+
+    debug "applying transform '$transform' on $MONITOR"
     wlr-randr --output "$MONITOR" --transform "$transform" || \
         log "wlr-randr failed for transform '$transform' on $MONITOR"
 }
 
 # ── Main loop ─────────────────────────────────────────────────────
 while true; do
-    # (Re-)locate the accelerometer; skip this cycle if none found
-    ensure_accel_dev || { log "no accelerometer found, retrying..."; sleep 5; continue; }
-
-    # Read raw 3-axis accelerometer values
-    x=$(cat "$ACCEL_DEV/in_accel_x_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
-    y=$(cat "$ACCEL_DEV/in_accel_y_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
-    z=$(cat "$ACCEL_DEV/in_accel_z_raw" 2>/dev/null) || { ACCEL_DEV=""; continue; }
-
-    # Absolute values
-    ax=${x#-}  # strip sign
-    ay=${y#-}
-    az=${z#-}
-
-    # Determine dominant axis → orientation
-    if [ "$ay" -gt "$ax" ] && [ "$ay" -gt "$az" ]; then
-        # Y dominant → landscape
-        if [ "$y" -gt 0 ]; then
-            set_transform 180   # top edge down → upside down
-        else
-            set_transform normal  # bottom edge down → normal landscape
-        fi
-    elif [ "$ax" -gt "$az" ]; then
-        # X dominant → portrait
-        if [ "$x" -gt 0 ]; then
-            set_transform 90    # left edge down
-        else
-            set_transform 270   # right edge down
-        fi
+    # iio-sensor-proxy is D-Bus activated, so a failed poll just means the
+    # daemon may be restarting; re-discover the device and try again.
+    if transform=$(poll_dbus); then
+        [ -n "$transform" ] && set_transform "$transform"
     else
-        # Z dominant → near flat on table, keep current
-        :
+        log "iio-sensor-proxy unavailable, retrying..."
     fi
 
-    sleep 1
+    sleep "$POLL_SEC"
 done

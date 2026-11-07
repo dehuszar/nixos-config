@@ -81,6 +81,14 @@
   # PipeWire/JACK clients, preventing audio dropouts from swap activity.
   security.rtkit.enable = true;
 
+  # iio-sensor-proxy: userspace daemon for the Intel ISH HID sensors on the
+  # X1 Yoga (accelerometer, ambient light).  The kernel's hid-sensor devices
+  # only stream when their IIO trigger buffer is enabled; this daemon does
+  # that, applies the ACPI mount matrix, and exposes AccelOrientation on
+  # D-Bus for mango-auto-rotate.  (Note: unrelated to the GMMS black-screen
+  # issue — that fires from the ACPI path, not from these sensors.)
+  hardware.sensor.iio.enable = true;
+
   # Enable PipeWire as the system sound server (not just the package).
   # This also enables the JACK compatibility layer by default.
   services.pipewire = {

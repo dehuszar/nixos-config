@@ -83,9 +83,10 @@
     };
   };
 
-  # ── Auto-rotate (accelerometer → screen transform) ───────────────
-  # Reads the accelerometer directly from /sys/bus/iio/devices/ and
-  # rotates eDP-1 via wlr-randr to match how you're holding the Yoga.
+  # ── Auto-rotate (iio-sensor-proxy → screen transform) ───────────────
+  # Watches the accelerometer orientation published by iio-sensor-proxy
+  # (enabled via hardware.sensor.iio.enable in configuration.nix) and applies
+  # the matching wlr-randr transform to eDP-1.
   home.file.".local/bin/mango-auto-rotate" = {
     source = ./mango/mango-auto-rotate;
     executable = true;
