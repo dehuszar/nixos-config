@@ -156,6 +156,7 @@ in
     brightnessctl
     btop
     chromium
+    cmus
     cura-appimage
     dbeaver-bin
     # freecad # temporarily disabled: ifcopenshell build broken in nixpkgs

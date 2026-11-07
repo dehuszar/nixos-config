@@ -168,11 +168,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1793193205,
-        "narHash": "sha256-X6xa6sGA7RnJQuZGbFMC+K+KToWAlBDCCjJXfTwEPsw=",
+        "lastModified": 1793757180,
+        "narHash": "sha256-gyV7AtCwLnOImcrfSETP4J3Ie96bz19DY47B7m7Y3HM=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "095fef2f265c3c0da4fe315efba8f8a04495ab34",
+        "rev": "b787c48e2ec57a9d098f5c2721882a3bc1e16f97",
         "type": "github"
       },
       "original": {
@@ -188,11 +188,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793167539,
-        "narHash": "sha256-QH9TZwsW1a+m3wQjBC6Iz6QEMQDZ7TsckA8gEz6+L7Q=",
+        "lastModified": 1793751277,
+        "narHash": "sha256-Nod3JUwnQ3zWRIjNf05xa5OAgBCOQbgBRyPS2mbIk4A=",
         "owner": "mangowm",
         "repo": "mangobar",
-        "rev": "626644fb4b70fe40ba436b72e4b1c0a894ee0053",
+        "rev": "2b79fcb956cce8d80c0ece997e0e2aa2b02b71c1",
         "type": "github"
       },
       "original": {
@@ -210,11 +210,11 @@
         "scenefx": "scenefx"
       },
       "locked": {
-        "lastModified": 1793419150,
-        "narHash": "sha256-xVeMx/9r9aKC/aF9QyzOXCqGDkMF9yLiz4b6A6dwc7g=",
+        "lastModified": 1793888034,
+        "narHash": "sha256-2RLkniNvhc9x0FravDTctqgCoaDzN8gMMyO1ZaTaxAU=",
         "owner": "mangowm",
         "repo": "mango",
-        "rev": "09828ec9af23eff9c54a64091ea11d763f322095",
+        "rev": "21f80a93bae634372c188ec3e50735e4c362e78e",
         "type": "github"
       },
       "original": {
@@ -231,8 +231,8 @@
         "nixvim": "nixvim"
       },
       "locked": {
-        "lastModified": 1793471369,
-        "narHash": "sha256-qkjPQy9q2TeRGuT0nJ4iVtwQIfdbMteLMd2p32pdzkE=",
+        "lastModified": 1793471872,
+        "narHash": "sha256-HWgqA7GMpcsFQLQta4wbqOTx8c012Ekw8ly3BZ1XfZc=",
         "path": "/home/sam/nix/nix-flakes/nixos-devtools",
         "type": "path"
       },
@@ -271,11 +271,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1793341285,
-        "narHash": "sha256-Y1CiZ4SoBUjLQyQM/pY+rS2dXD3CHLPstF0lmOc73D4=",
+        "lastModified": 1793726008,
+        "narHash": "sha256-jQp1wKvbwWdLBASTXkSi/VYmDJ5AbBi1WvcMt9HWJC8=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1c89083e451e891152365b799595cf7790a43325",
+        "rev": "1d060086d60cb76a40cf37109f979d88a5bd6396",
         "type": "github"
       },
       "original": {
@@ -357,8 +357,8 @@
         ]
       },
       "locked": {
-        "lastModified": 1791928674,
-        "narHash": "sha256-8y4KOALxGzJTNipKn2TIOPUhws4EgPTMJFNdBlc+RuA=",
+        "lastModified": 1793924914,
+        "narHash": "sha256-UDa8grnS355a8fQOnppeXwtp2l9KNfodHli+/KjUwyg=",
         "path": "/home/sam/nix/nix-flakes/nixos-recording",
         "type": "path"
       },
