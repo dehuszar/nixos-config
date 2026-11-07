@@ -1,16 +1,26 @@
 #!/bin/sh
 # mango-auto-rotate
 #
-# Thin bridge between iio-sensor-proxy (D-Bus) and wlr-randr: watches the
-# ThinkPad Yoga's accelerometer orientation as published by
-# org.freedesktop.iio.iiosensorproxy and applies the matching transform to
-# the internal display.
+# Bridge between iio-sensor-proxy (D-Bus) and wlr-randr: watches the
+# ThinkPad Yoga's accelerometer orientation as published by iio-sensor-proxy
+# and applies the matching transform to the internal display.
 #
-# Requires hardware.sensor.iio.enable = true (system config). We deliberately
-# do NOT read /sys/bus/iio/devices/*/in_accel_*_raw: on Intel ISH machines the
-# hid-sensor sysfs values are frozen unless a consumer enables the IIO trigger
-# buffer — which is exactly what iio-sensor-proxy does for us. Scraping sysfs
-# silently "succeeds" on stale data, which is how auto-rotate used to die.
+# Requires hardware.sensor.iio.enable = true (system config).
+#
+# D-Bus API notes:
+#   - iio-sensor-proxy >= 3.x uses bus name net.hadess.SensorProxy (object
+#     root /net/hadess/SensorProxy). The old 2.x name org.freedesktop.IIO is
+#     also probed for compatibility. Using the wrong name fails with
+#     "The name is not activatable".
+#   - Device objects, the Accelerometer interface, the orientation property
+#     name (Orientation vs legacy AccelOrientation) and the change signal
+#     (changed vs Changed) are all DISCOVERED via introspection rather than
+#     hardcoded, so this survives further upstream renames.
+#   - The proxy is D-Bus activated; the first call below starts it.
+#
+# Latency: when the interface has a change signal we block on it (event
+# driven, reacts within ~a few hundred ms — the proxy's own stabilization
+# window is the floor). Otherwise we poll every MANGO_ROTATE_POLL seconds.
 #
 # Transform names (wlr-randr format):
 #   normal   = landscape
@@ -19,21 +29,26 @@
 #   270      = portrait, right edge up
 
 MONITOR="${MANGO_ROTATE_MONITOR:-eDP-1}"
-DEBOUNCE_SEC="${MANGO_ROTATE_DEBOUNCE:-1}"
-POLL_SEC="${MANGO_ROTATE_POLL:-1}"
+DEBOUNCE_SEC="${MANGO_ROTATE_DEBOUNCE:-0}"
+POLL_SEC="${MANGO_ROTATE_POLL:-0.2}"
+SIGNAL_WAIT_SEC="${MANGO_ROTATE_SIGNAL_WAIT:-10}"
 DEBUG="${MANGO_ROTATE_DEBUG:-0}"
 
-DBUS_SERVICE="org.freedesktop.IIO"
-DBUS_ROOT="/org/freedesktop/IIO"
-ACCEL_IFACE="org.freedesktop.IIO.Accelerometer"
+# Bus names to try, newest API first.
+DBUS_CANDIDATES="net.hadess.SensorProxy org.freedesktop.IIO"
+
+BUS_SVC=""      # activatable bus name we ended up using
+BUS_ROOT=""     # its object root
+BUS_PATH=""     # device object path
+ACCEL_IFACE=""  # full Accelerometer interface name
+PROP=""         # orientation property member name
+SIG=""          # change signal member name (empty = poll mode)
 
 LAST_TRANSFORM=""
 CANDIDATE=""
 CAND_COUNT=0
-DBUS_DEV=""
 
-# Everything goes to stderr so stdout stays clean for value-capturing
-# helpers below (transform=$(poll_dbus)).
+# Everything goes to stderr so stdout stays clean for value capture.
 log() {
     echo "mango-auto-rotate: $*" >&2
 }
@@ -43,25 +58,53 @@ debug() {
     return 0
 }
 
+# net.hadess.SensorProxy -> /net/hadess/SensorProxy
+svc_to_root() {
+    echo "/$(echo "$1" | tr '.' '/')"
+}
+
 # ── D-Bus discovery ─────────────────────────────────────────────
-# Find the device object that exposes the Accelerometer interface.
-find_dbus_dev() {
-    objs=$(busctl --system call "$DBUS_SERVICE" "$DBUS_ROOT" \
-        org.freedesktop.DBus.ObjectManager GetManagedObjects 2>/dev/null) || \
-        return 1
-    for path in $(echo "$objs" | grep -o "$DBUS_ROOT/[A-Za-z0-9_-]*" | sort -u); do
-        if busctl --system introspect "$DBUS_SERVICE" "$path" 2>/dev/null | \
-            grep -q "Accelerometer"; then
-            echo "$path"
-            return 0
+discover() {
+    for svc in $DBUS_CANDIDATES; do
+        root=$(svc_to_root "$svc")
+
+        # Bus activation happens as a side effect of this call; a daemon
+        # that isn't installed/activatable just errors and we move on.
+        paths=$(busctl --system call "$svc" "$root" \
+            org.freedesktop.DBus.ObjectManager GetManagedObjects 2>/dev/null | \
+            grep -o "\"$root[^\"]*\"" | tr -d '"' | sort -u)
+        # ObjectManager missing/unsupported -> enumerate the tree instead
+        if [ -z "$paths" ]; then
+            paths=$(busctl --system tree "$svc" 2>/dev/null | \
+                grep -o "/[A-Za-z0-9_./-]*" | grep "^$root" | sort -u)
         fi
+        [ -n "$paths" ] || continue
+
+        for p in $paths; do
+            [ "$p" != "$root" ] || continue
+            intros=$(busctl --system introspect "$svc" "$p" 2>/dev/null) || continue
+            iface=$(echo "$intros" | awk '$2 == "interface" && $1 ~ /Accelerometer/ {print $1; exit}')
+            [ -n "$iface" ] || continue
+            prop=$(echo "$intros" | awk '$2 == "property" && ($1 == "Orientation" || $1 == "AccelOrientation") {print $1; exit}')
+            [ -n "$prop" ] || continue
+            sig=$(echo "$intros" | awk '$2 == "signal" && ($1 == "changed" || $1 == "Changed") {print $1; exit}')
+
+            BUS_SVC="$svc"; BUS_ROOT="$root"; BUS_PATH="$p"
+            ACCEL_IFACE="$iface"; PROP="$prop"; SIG="$sig"
+            log "accelerometer: $svc $p ($iface, signal=${SIG:-none -> polling ${POLL_SEC}s})"
+            return 0
+        done
     done
     return 1
 }
 
+reset_bus() {
+    BUS_SVC="" ; BUS_ROOT="" ; BUS_PATH="" ; ACCEL_IFACE="" ; PROP="" ; SIG=""
+}
+
 # iio-sensor-proxy orientation strings → wlr-randr transforms.
 # If portrait rotation feels inverted, swap the 90/270 mappings here.
-map_dbus_orientation() {
+map_orientation() {
     case "$1" in
         normal)     echo normal ;;
         bottom-up)  echo 180 ;;
@@ -71,30 +114,65 @@ map_dbus_orientation() {
     esac
 }
 
-# Poll D-Bus once; echoes a transform on success, returns nonzero on
-# failure (caller retries discovery).
-poll_dbus() {
-    if [ -z "$DBUS_DEV" ]; then
-        DBUS_DEV=$(find_dbus_dev) || return 1
-        [ -n "$DBUS_DEV" ] || return 1
-        log "using iio-sensor-proxy device: $DBUS_DEV"
+# ── Sysfs fallback ──────────────────────────────────────────────
+# Used only while iio-sensor-proxy is unavailable (e.g. the proxy exits
+# with "No sensors or missing kernel drivers" because its udev rules do
+# not tag the Yoga's accel_3d device). Dominant-axis math, same transform
+# mapping as the D-Bus path. Caveat: on ISH machines sysfs values can go
+# stale when the sensor stream is idle; if rotation stops working while
+# this path is active, that is why — fix the proxy, not this loop.
+SYSFS_DEV=""
+
+find_accel_dev() {
+    for d in /sys/bus/iio/devices/iio:device*; do
+        [ -e "$d/in_accel_x_raw" ] || continue
+        [ -e "$d/in_accel_y_raw" ] || continue
+        [ -e "$d/in_accel_z_raw" ] || continue
+        echo "$d"
+        return 0
+    done
+    return 1
+}
+
+poll_sysfs() {
+    if [ -z "$SYSFS_DEV" ] || [ ! -e "$SYSFS_DEV/in_accel_x_raw" ]; then
+        SYSFS_DEV=$(find_accel_dev) || return 1
+        [ -n "$SYSFS_DEV" ] || return 1
+        log "sysfs fallback: using $SYSFS_DEV ($(cat "$SYSFS_DEV/name" 2>/dev/null))"
     fi
 
-    orient=$(busctl --system get-property "$DBUS_SERVICE" "$DBUS_DEV" \
-        "$ACCEL_IFACE" Orientation 2>/dev/null | tr -d '"') || \
-        { DBUS_DEV=""; return 1; }
-    [ -n "$orient" ] || { DBUS_DEV=""; return 1; }
+    x=$(cat "$SYSFS_DEV/in_accel_x_raw" 2>/dev/null) || { SYSFS_DEV=""; return 1; }
+    y=$(cat "$SYSFS_DEV/in_accel_y_raw" 2>/dev/null) || { SYSFS_DEV=""; return 1; }
+    z=$(cat "$SYSFS_DEV/in_accel_z_raw" 2>/dev/null) || { SYSFS_DEV=""; return 1; }
+    debug "sysfs read x=$x y=$y z=$z"
 
-    debug "dbus orientation: $orient"
-    t=$(map_dbus_orientation "$orient")
-    [ -n "$t" ] || return 1
-    echo "$t"
+    ax=${x#-}; ay=${y#-}; az=${z#-}
+    if [ "$ay" -gt "$ax" ] && [ "$ay" -gt "$az" ]; then
+        if [ "$y" -gt 0 ]; then echo 180; else echo normal; fi
+    elif [ "$ax" -gt "$az" ]; then
+        if [ "$x" -gt 0 ]; then echo 90; else echo 270; fi
+    fi
+    # Z-dominant (flat) → keep current; empty output
+    return 0
+}
+
+# Read the orientation property and apply it. Returns nonzero if the
+# device went away (caller re-discovers).
+apply_orientation() {
+    orient=$(busctl --system get-property "$BUS_SVC" "$BUS_PATH" \
+        "$ACCEL_IFACE" "$PROP" 2>/dev/null | tr -d '"' | tr 'A-Z' 'a-z' | tr ' ' '-') || \
+        { reset_bus; return 1; }
+    [ -n "$orient" ] || { reset_bus; return 1; }
+
+    debug "orientation: $orient"
+    t=$(map_orientation "$orient")
+    [ -n "$t" ] && set_transform "$t"
     return 0
 }
 
 # ── Applying transforms ─────────────────────────────────────────
 # Only act on genuine orientation *changes*; re-applying the same transform
-# every poll cycle would fight any manual wlr-randr call.
+# every cycle would fight any manual wlr-randr call.
 set_transform() {
     transform="$1"
 
@@ -104,8 +182,8 @@ set_transform() {
         return
     fi
 
-    # Debounce: require the new orientation to persist for
-    # DEBOUNCE_SEC consecutive polls before committing.
+    # Debounce: require the new transform to be seen DEBOUNCE_SEC+1 times
+    # in a row before committing (0 = apply immediately).
     if [ "$transform" = "$CANDIDATE" ]; then
         CAND_COUNT=$((CAND_COUNT + 1))
     else
@@ -124,14 +202,49 @@ set_transform() {
 }
 
 # ── Main loop ─────────────────────────────────────────────────────
+dbus_misses=0
 while true; do
-    # iio-sensor-proxy is D-Bus activated, so a failed poll just means the
-    # daemon may be restarting; re-discover the device and try again.
-    if transform=$(poll_dbus); then
-        [ -n "$transform" ] && set_transform "$transform"
-    else
-        log "iio-sensor-proxy unavailable, retrying..."
+    if [ -z "$BUS_SVC" ]; then
+        if discover; then
+            dbus_misses=0
+        else
+            dbus_misses=$((dbus_misses + 1))
+            if [ "$dbus_misses" -eq 1 ]; then
+                log "iio-sensor-proxy not on D-Bus ($DBUS_CANDIDATES); using sysfs fallback"
+            fi
+            if t=$(poll_sysfs); then
+                [ -n "$t" ] && set_transform "$t"
+            elif [ "$dbus_misses" -ge 3 ]; then
+                log "no accelerometer source found, retrying..."
+                dbus_misses=0
+            fi
+            sleep 1
+            continue
+        fi
     fi
 
-    sleep "$POLL_SEC"
+    if ! apply_orientation; then
+        # device vanished; force re-discovery next cycle (which will
+        # sysfs-fallback again if the proxy is gone)
+        sleep "$POLL_SEC"
+        continue
+    fi
+
+    if [ -n "$SIG" ]; then
+        # Block until the proxy reports a settled orientation change
+        # (or SIGNAL_WAIT_SEC passes — acts as a backstop poll).
+        # 124 = timeout (fine), 0 = signal (fine); anything else means
+        # the wait broke (proxy restart, lost device): re-discover.
+        timeout "$SIGNAL_WAIT_SEC" busctl --system wait \
+            "$BUS_SVC" "$BUS_PATH" "$ACCEL_IFACE" "$SIG" \
+            >/dev/null 2>&1
+        rc=$?
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
+            log "signal wait failed (rc=$rc), re-discovering"
+            reset_bus
+            sleep 2
+        fi
+    else
+        sleep "$POLL_SEC"
+    fi
 done
