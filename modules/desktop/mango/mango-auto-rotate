@@ -122,6 +122,7 @@ map_orientation() {
 # stale when the sensor stream is idle; if rotation stops working while
 # this path is active, that is why — fix the proxy, not this loop.
 SYSFS_DEV=""
+SYSFS_TRANSFORM=""
 
 find_accel_dev() {
     for d in /sys/bus/iio/devices/iio:device*; do
@@ -135,6 +136,7 @@ find_accel_dev() {
 }
 
 poll_sysfs() {
+    SYSFS_TRANSFORM=""
     if [ -z "$SYSFS_DEV" ] || [ ! -e "$SYSFS_DEV/in_accel_x_raw" ]; then
         SYSFS_DEV=$(find_accel_dev) || return 1
         [ -n "$SYSFS_DEV" ] || return 1
@@ -148,11 +150,11 @@ poll_sysfs() {
 
     ax=${x#-}; ay=${y#-}; az=${z#-}
     if [ "$ay" -gt "$ax" ] && [ "$ay" -gt "$az" ]; then
-        if [ "$y" -gt 0 ]; then echo 180; else echo normal; fi
+        if [ "$y" -gt 0 ]; then SYSFS_TRANSFORM=180; else SYSFS_TRANSFORM=normal; fi
     elif [ "$ax" -gt "$az" ]; then
-        if [ "$x" -gt 0 ]; then echo 90; else echo 270; fi
+        if [ "$x" -gt 0 ]; then SYSFS_TRANSFORM=90; else SYSFS_TRANSFORM=270; fi
     fi
-    # Z-dominant (flat) → keep current; empty output
+    # Z-dominant (flat) → keep current transform (SYSFS_TRANSFORM empty)
     return 0
 }
 
@@ -212,8 +214,8 @@ while true; do
             if [ "$dbus_misses" -eq 1 ]; then
                 log "iio-sensor-proxy not on D-Bus ($DBUS_CANDIDATES); using sysfs fallback"
             fi
-            if t=$(poll_sysfs); then
-                [ -n "$t" ] && set_transform "$t"
+            if poll_sysfs; then
+                [ -n "$SYSFS_TRANSFORM" ] && set_transform "$SYSFS_TRANSFORM"
             elif [ "$dbus_misses" -ge 3 ]; then
                 log "no accelerometer source found, retrying..."
                 dbus_misses=0
